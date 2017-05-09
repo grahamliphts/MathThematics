@@ -41,7 +41,7 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="EsgiShader.cpp">
-	 <Filter>sources</Filter>
+      <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="ChaikinCoonsFunctions.cpp">
       <Filter>sources</Filter>
@@ -81,10 +81,10 @@
     <ClInclude Include="Quaternion.hpp">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="EsgiShader.h">
-		<Filter>sources</Filter>
-    </ClInclude>
     <ClInclude Include="ChaikinConnsFunctions.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="EsgiShader.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>
@@ -98,6 +98,12 @@
       <Filter>shaders</Filter>
     </None>
     <None Include="shaders\grid.vert">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\basic.frag">
+      <Filter>shaders</Filter>
+    </None>
+    <None Include="shaders\basic.vert">
       <Filter>shaders</Filter>
     </None>
   </ItemGroup>

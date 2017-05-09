@@ -175,12 +175,15 @@
     <ClInclude Include="..\libs\imgui\stb_truetype.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ChaikinConnsFunctions.h" />
+    <ClInclude Include="EsgiShader.h" />
     <ClInclude Include="imgui_impl_glfw_gl3.h" />
     <ClInclude Include="Quaternion.hpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />
     <None Include="packages.config" />
+    <None Include="shaders\basic.frag" />
+    <None Include="shaders\basic.vert" />
     <None Include="shaders\grid.frag" />
     <None Include="shaders\grid.geom" />
     <None Include="shaders\grid.vert" />

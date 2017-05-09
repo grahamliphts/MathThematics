@@ -13,12 +13,24 @@
 #include "ChaikinConnsFunctions.h"
 
 Camera *cam;
-GLint gridProgram;
+GLint gridProgram, basicProgram;
 int width = 1500;
 int height = 800;
 
+GLuint vaoPoint;
+GLuint vertexBufferPoints;
+
+std::vector<glm::vec3> chaikinCurve;
+
 struct
 {
+	struct
+	{
+		int     model_matrix;
+		int     projview_matrix;
+		int     position;
+		int     color;
+	} basic;
 	struct
 	{
 		int     projview_matrix;
@@ -26,6 +38,9 @@ struct
 } uniforms;
 
 using namespace glm;
+
+template<typename T>
+void majBuffer(int vertexBuffer, std::vector<T> &vecteur);
 
 static void error_callback(int error, const char* description)
 {
@@ -39,11 +54,25 @@ void render(void)
 	glm::mat4 proj = glm::perspective(45.0f, (float)width / height, 0.01f, 1000.0f);
 	glm::mat4 view = cam->GetOrientation() * glm::translate(cam_pos);
 	glm::mat4 proj_view = proj * view;
-	
+	glm::mat4 model_mat;
+
 	//Draw grid
 	glUseProgram(gridProgram);
 	glUniformMatrix4fv(uniforms.grid.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glDrawArrays(GL_POINTS, 0, 1);
+
+	//Draw Point and curves
+	glUseProgram(basicProgram);
+	glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
+	glBindVertexArray(vaoPoint);
+	glDrawArrays(GL_POINTS, 0, chaikinCurve.size());
+	glBindVertexArray(0);
+
+	glUseProgram(0);
+
+
 }
 
 void callbackMousePos(GLFWwindow *window, int button, int action, int mods)
@@ -104,9 +133,31 @@ void callbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int
 	}
 }
 
+void initialize()
+{
+	/*VAO Points*/
+	glGenVertexArrays(1, &vaoPoint);
+	glBindVertexArray(vaoPoint);
+
+	glGenBuffers(1, &vertexBufferPoints);
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBufferPoints);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * chaikinCurve.size(), chaikinCurve.data(), GL_STATIC_DRAW);
+
+	glEnableVertexAttribArray(uniforms.basic.position);
+	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glBindVertexArray(0);
+}
+
 void loadShaders()
 {
-	EsgiShader gridShader;
+	EsgiShader gridShader, basicShader;
+
+	printf("Load basic fs\n");
+	basicShader.LoadFragmentShader("shaders/basic.frag");
+	printf("Load basic vs\n");
+	basicShader.LoadVertexShader("shaders/basic.vert");
+	basicShader.Create();
 
 	printf("Load grid fs\n");
 	gridShader.LoadFragmentShader("shaders/grid.frag");
@@ -117,7 +168,13 @@ void loadShaders()
 	gridShader.Create();
 
 	gridProgram = gridShader.GetProgram();
+	basicProgram = basicShader.GetProgram();
+
 	uniforms.grid.projview_matrix = glGetUniformLocation(gridProgram, "projview_matrix");
+
+	uniforms.basic.projview_matrix = glGetUniformLocation(basicProgram, "projview_matrix");
+	uniforms.basic.model_matrix = glGetUniformLocation(basicProgram, "model_matrix");
+	uniforms.basic.position = glGetAttribLocation(basicProgram, "a_position");
 }
 
 int main(int argc, char** argv)
@@ -146,18 +203,20 @@ int main(int argc, char** argv)
 	glfwSetKeyCallback(window, callbackKeyboard);
 
 	loadShaders();
+	initialize();
 
     bool show_test_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImColor(114, 144, 154);
-
 
 	std::vector<glm::vec3> courbe;
 	courbe.push_back(glm::vec3(0, 0, 0));
 	courbe.push_back(glm::vec3(1, 0, 0));
 	courbe.push_back(glm::vec3(1, 1, 0));
 
-	std::vector<glm::vec3> chaikinCurve = GetChaikinCurve(courbe, 2);
+	chaikinCurve = GetChaikinCurve(courbe, 2);
+
+	majBuffer(vertexBufferPoints, chaikinCurve);
 
 	for (int i = 0; i < chaikinCurve.size(); i++)
 		printf("Point %d: %f - %f - %f\n", i, chaikinCurve[i].x, chaikinCurve[i].y, chaikinCurve[i].z);
@@ -213,4 +272,11 @@ int main(int argc, char** argv)
     glfwTerminate();
 
     return 0;
+}
+
+template<typename T>
+void majBuffer(int vertexBuffer, std::vector<T> &vecteur)
+{
+	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(T) * vecteur.size(), vecteur.data(), GL_STATIC_DRAW);
 }
