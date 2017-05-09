@@ -1,6 +1,6 @@
 #include "ChaikinConnsFunctions.h"
 
-std::vector<glm::vec3> GetChaikinCurve(std::vector<glm::vec3> controlPoints, int iter)
+std::vector<glm::vec3> GetChaikinCurve(std::vector<glm::vec3> controlPoints, int iter, float lowerRatio, float highRatio)
 {
 	std::vector<glm::vec3> chaikinCurve;
 	
@@ -17,10 +17,10 @@ std::vector<glm::vec3> GetChaikinCurve(std::vector<glm::vec3> controlPoints, int
 			glm::vec3 pointB = controlPoints[i + 1];
 
 			if(i != 0)
-				chaikinCurve.push_back(pointA + (pointB - pointA) * 0.25f);
+				chaikinCurve.push_back(pointA + (pointB - pointA) * lowerRatio);
 
 			if(i + 1 != controlPoints.size() - 1)
-				chaikinCurve.push_back(pointA + (pointB - pointA) * 0.75f);
+				chaikinCurve.push_back(pointA + (pointB - pointA) * highRatio);
 		}
 		chaikinCurve.push_back(controlPoints[controlPoints.size() - 1]);
 
@@ -34,13 +34,13 @@ std::vector<glm::vec3> GetChaikinCurve(std::vector<glm::vec3> controlPoints, int
 	return chaikinCurve;
 }
 
-std::vector<std::vector<glm::vec3>> GetChaikinCurves(std::vector<std::vector<glm::vec3>> controlPoints, int iter)
+std::vector<std::vector<glm::vec3>> GetChaikinCurves(std::vector<std::vector<glm::vec3>> controlPoints, int iter, float lowerRatio, float highRatio)
 {
 	std::vector<std::vector<glm::vec3>> chaikinCurves;
 
 	for (int i = 0; i < controlPoints.size(); i++)
 	{
-		chaikinCurves.push_back(GetChaikinCurve(controlPoints[i], iter));
+		chaikinCurves.push_back(GetChaikinCurve(controlPoints[i], iter, lowerRatio, highRatio));
 	}
 
 	return chaikinCurves;
