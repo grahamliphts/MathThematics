@@ -17,10 +17,18 @@ GLint gridProgram, basicProgram;
 int width = 1500;
 int height = 800;
 
+float fragmentColor[4];
+
+//Parameters for Chaikin
+ImVec4 chaikinCurveColor = ImColor(114, 0, 6);
+ImVec4 originalCurveColor = ImColor(172, 255, 143);
+int iterations = 2;
+
 GLuint vaoPoint;
 GLuint vertexBufferPoints;
 
 std::vector<glm::vec3> chaikinCurve;
+std::vector<glm::vec3> originalCurve;
 
 struct
 {
@@ -41,6 +49,7 @@ using namespace glm;
 
 template<typename T>
 void majBuffer(int vertexBuffer, std::vector<T> &vecteur);
+void setColorToFragment(ImVec4 &color);
 
 static void error_callback(int error, const char* description)
 {
@@ -66,13 +75,23 @@ void render(void)
 	glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 
+	setColorToFragment(chaikinCurveColor);
+	majBuffer(vertexBufferPoints, chaikinCurve);
 	glBindVertexArray(vaoPoint);
 	glDrawArrays(GL_POINTS, 0, chaikinCurve.size());
 	glBindVertexArray(0);
 
+	glBindVertexArray(vaoPoint);
+	glDrawArrays(GL_LINE_STRIP, 0, chaikinCurve.size());
+	glBindVertexArray(0);
+
+	setColorToFragment(originalCurveColor);
+	majBuffer(vertexBufferPoints, originalCurve);
+	glBindVertexArray(vaoPoint);
+	glDrawArrays(GL_LINE_STRIP, 0, originalCurve.size());
+	glBindVertexArray(0);
+
 	glUseProgram(0);
-
-
 }
 
 void callbackMousePos(GLFWwindow *window, int button, int action, int mods)
@@ -99,7 +118,7 @@ void callbackMouseMove(GLFWwindow *window, double x, double y)
 
 void callbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-	if (action == GLFW_PRESS)
+	if (action != GLFW_RELEASE)
 	{
 		switch (key)
 		{
@@ -175,6 +194,7 @@ void loadShaders()
 	uniforms.basic.projview_matrix = glGetUniformLocation(basicProgram, "projview_matrix");
 	uniforms.basic.model_matrix = glGetUniformLocation(basicProgram, "model_matrix");
 	uniforms.basic.position = glGetAttribLocation(basicProgram, "a_position");
+	uniforms.basic.color = glGetUniformLocation(basicProgram, "fragmentColor");
 }
 
 int main(int argc, char** argv)
@@ -205,16 +225,11 @@ int main(int argc, char** argv)
 	loadShaders();
 	initialize();
 
-    bool show_test_window = true;
-    bool show_another_window = false;
-    ImVec4 clear_color = ImColor(114, 144, 154);
+    bool show_test_window = false;
 
-	std::vector<glm::vec3> courbe;
-	courbe.push_back(glm::vec3(0, 0, 0));
-	courbe.push_back(glm::vec3(1, 0, 0));
-	courbe.push_back(glm::vec3(1, 1, 0));
-
-	chaikinCurve = GetChaikinCurve(courbe, 2);
+	originalCurve.push_back(glm::vec3(0, 0.25, 0));
+	originalCurve.push_back(glm::vec3(1, 0.25, 0));
+	originalCurve.push_back(glm::vec3(1, 1.25, 0));
 
 	majBuffer(vertexBufferPoints, chaikinCurve);
 
@@ -227,33 +242,45 @@ int main(int argc, char** argv)
         glfwPollEvents();
         ImGui_ImplGlfwGL3_NewFrame();
 
-        // 1. Show a simple window
-        // Tip: if we don't call ImGui::Begin()/ImGui::End() the widgets appears in a window automatically called "Debug"
-        {
-            static float f = 0.0f;
-            ImGui::Text("Hello, world!");
-            ImGui::SliderFloat("float", &f, 0.0f, 1.0f);
-            ImGui::ColorEdit3("clear color", (float*)&clear_color);
-            if (ImGui::Button("Test Window")) show_test_window ^= 1;
-            if (ImGui::Button("Another Window")) show_another_window ^= 1;
-            ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-        }
+		ImGui::Begin("Chaikin Curve / Coons / Subdivision");
+		ImGui::Text("Parameters for chaikin curve");
 
-        // 2. Show another simple window, this time using an explicit Begin/End pair
-        if (show_another_window)
-        {
-            ImGui::SetNextWindowSize(ImVec2(200,100), ImGuiSetCond_FirstUseEver);
-            ImGui::Begin("Another Window", &show_another_window);
-            ImGui::Text("Hello");
-            ImGui::End();
-        }
+		ImGui::ColorEdit3("chaikin curve color", (float*)&chaikinCurveColor);
+		ImGui::ColorEdit3("original curve color", (float*)&originalCurveColor);
 
-        // 3. Show the ImGui test window. Most of the sample code is in ImGui::ShowTestWindow()
+		ImGui::SliderInt("Iteration for chaikin curve", &iterations, 1, 5);
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+		ImGui::Text("Parameters for coons");
+
+		ImGui::Spacing();
+		ImGui::Separator();
+
+        if (ImGui::Button("Test Window")) show_test_window ^= 1;
+		ImGui::End();
+
+		static bool p_open = true;
+		ImGui::SetNextWindowPos(ImVec2(10, 10));
+		if (!ImGui::Begin("Example: Fixed Overlay", &p_open, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
+		{
+			ImGui::End();
+			return 0;
+		}
+		ImGui::Text("FPS Counter");
+		ImGui::Separator();
+		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+		ImGui::End();
+
         if (show_test_window)
         {
             ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
             ImGui::ShowTestWindow(&show_test_window);
         }
+
+		cam->updatePos();
+		chaikinCurve = GetChaikinCurve(originalCurve, iterations);
 
         // Rendering
         glViewport(0, 0, width, height);
@@ -272,6 +299,15 @@ int main(int argc, char** argv)
     glfwTerminate();
 
     return 0;
+}
+
+void setColorToFragment(ImVec4 &color)
+{
+	fragmentColor[0] = color.x;
+	fragmentColor[1] = color.y;
+	fragmentColor[2] = color.z;
+	fragmentColor[3] = color.w;
+	glProgramUniform4fv(basicProgram, uniforms.basic.color, 1, fragmentColor);
 }
 
 template<typename T>
