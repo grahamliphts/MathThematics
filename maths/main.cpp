@@ -50,6 +50,7 @@ ImVec4 _chaikinCurveColor = ImColor(114, 0, 6);
 float _lowerRatio = 0.25f;
 float _highRatio = 0.75f;
 int _iterations = 2;
+bool _showPointChaikin = true;
 
 GLuint _vaoPoint;
 GLuint _vertexBufferPoints;
@@ -145,7 +146,10 @@ int main(int argc, char** argv)
 		ImGui::SliderInt("Limit Z (+/-)", &_limitsY, 1, 10);
 
 		if (ImGui::Button("Create New Curves"))
+		{
 			CreateControlCurves();
+			_chaikinCurve = GetChaikinCurve(_originalCurve, _iterations, _lowerRatio, _highRatio);
+		}
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -154,6 +158,9 @@ int main(int argc, char** argv)
 		ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
 		ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5);
 		ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f);
+		ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
+		if (ImGui::Button("Update") && _originalCurve.size() > 2)
+			_chaikinCurve = GetChaikinCurve(_originalCurve, _iterations, _lowerRatio, _highRatio);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -187,9 +194,6 @@ int main(int argc, char** argv)
         }
 
 		_cam->updatePos();
-
-		if(_originalCurve.size() > 2)
-			_chaikinCurve = GetChaikinCurve(_originalCurve, _iterations, _lowerRatio, _highRatio);
 
         // Rendering
         glViewport(0, 0, _width, _height);
@@ -288,9 +292,13 @@ void Render(void)
 
 	SetColorToFragment(_chaikinCurveColor);
 	MajBuffer(_vertexBufferPoints, _chaikinCurve);
-	glBindVertexArray(_vaoPoint);
-	glDrawArrays(GL_POINTS, 0, _chaikinCurve.size());
-	glBindVertexArray(0);
+
+	if (_showPointChaikin)
+	{
+		glBindVertexArray(_vaoPoint);
+		glDrawArrays(GL_POINTS, 0, _chaikinCurve.size());
+		glBindVertexArray(0);
+	}
 
 	glBindVertexArray(_vaoPoint);
 	glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurve.size());
