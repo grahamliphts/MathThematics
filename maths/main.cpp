@@ -1,32 +1,148 @@
 #include <imgui.h>
 #include "imgui_impl_glfw_gl3.h"
 #include <stdio.h>
-#include <GL/gl3w.h>   
-#include <GLFW/glfw3.h>
+
+#include "EsgiShader.h"
+
+#include <GLFW\glfw3.h>
 #include <glm\glm.hpp>
-using namespace glm;
+#include <glm\gtc\matrix_transform.hpp>
+#include <glm\gtx\transform.hpp>
+#include "Camera.h"
+
+Camera *cam;
+GLint gridProgram;
+int width = 1500;
+int height = 800;
+
+struct
+{
+	struct
+	{
+		int     projview_matrix;
+	} grid;
+} uniforms;
+
 
 static void error_callback(int error, const char* description)
 {
     fprintf(stderr, "Error %d: %s\n", error, description);
 }
 
-int main(int, char**)
+void render(void)
 {
+	//Parameters
+	glm::vec3 cam_pos = glm::vec3(cam->posx, cam->posy, cam->posz);
+	glm::mat4 proj = glm::perspective(45.0f, (float)width / height, 0.01f, 1000.0f);
+	glm::mat4 view = cam->GetOrientation() * glm::translate(cam_pos);
+	glm::mat4 proj_view = proj * view;
+	
+	//Draw grid
+	glUseProgram(gridProgram);
+	glUniformMatrix4fv(uniforms.grid.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+	glDrawArrays(GL_POINTS, 0, 1);
+}
+
+void callbackMousePos(GLFWwindow *window, int button, int action, int mods)
+{
+	double x, y;
+	glfwGetCursorPos(window, &x, &y);
+	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && ImGui::IsMouseHoveringAnyWindow() == 0)
+	{
+		std::cout << "Button mouse left press" << std::endl;
+	}
+	if (button == GLFW_MOUSE_BUTTON_RIGHT)
+	{
+		if (action == GLFW_RELEASE)
+			cam->releaseCam();
+		else
+			cam->grabCam(x, y);
+	}
+}
+
+void callbackMouseMove(GLFWwindow *window, double x, double y)
+{
+	cam->orienterCam(x, y);
+}
+
+void callbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int mods)
+{
+	if (action == GLFW_PRESS)
+	{
+		switch (key)
+		{
+			case GLFW_KEY_Z:
+				cam->deltaForward = -1;
+				break;
+			case GLFW_KEY_S:
+				cam->deltaForward = 1;
+				break;
+			case GLFW_KEY_Q:
+				cam->deltaStrafe = -1;
+				break;
+			case GLFW_KEY_D:
+				cam->deltaStrafe = 1;
+				break;
+		}
+	}
+	else if (action == GLFW_RELEASE)
+	{
+		switch (key)
+		{
+			case GLFW_KEY_Z:
+			case GLFW_KEY_S:
+				cam->deltaForward = 0;
+				break;
+			case GLFW_KEY_Q:
+			case GLFW_KEY_D:
+				cam->deltaStrafe = 0;
+				break;
+		}
+	}
+}
+
+void loadShaders()
+{
+	EsgiShader gridShader;
+
+	printf("Load grid fs\n");
+	gridShader.LoadFragmentShader("shaders/grid.frag");
+	printf("Load grid vs\n");
+	gridShader.LoadVertexShader("shaders/grid.vert");
+	printf("Load grid geom\n");
+	gridShader.LoadGeometryShader("shaders/grid.geom");
+	gridShader.Create();
+
+	gridProgram = gridShader.GetProgram();
+	uniforms.grid.projview_matrix = glGetUniformLocation(gridProgram, "projview_matrix");
+}
+
+int main(int argc, char** argv)
+{
+	cam = new Camera();
+
     // Setup window
     glfwSetErrorCallback(error_callback);
     if (!glfwInit())
         return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Coons & Subvision", NULL, NULL);
+    GLFWwindow* window = glfwCreateWindow(width, height, "Coons & Subvision", NULL, NULL);
     glfwMakeContextCurrent(window);
-    gl3wInit();
 
+	//glewExperimental = GL_TRUE;
+	gl3wInit();
+	
     // Setup ImGui binding
     ImGui_ImplGlfwGL3_Init(window, true);
+
+	glfwSetMouseButtonCallback(window, callbackMousePos);
+	glfwSetCursorPosCallback(window, callbackMouseMove);
+	glfwSetKeyCallback(window, callbackKeyboard);
+
+	loadShaders();
 
     bool show_test_window = true;
     bool show_another_window = false;
@@ -67,11 +183,13 @@ int main(int, char**)
         }
 
         // Rendering
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(clear_color.x, clear_color.y, clear_color.z, clear_color.w);
-        glClear(GL_COLOR_BUFFER_BIT);
+        glViewport(0, 0, width, height);
+		glClearColor(0.5, 0.5, 0.5, 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		glPointSize(10);
+
+		render();
         ImGui::Render();
         glfwSwapBuffers(window);
     }
