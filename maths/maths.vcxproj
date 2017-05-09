@@ -157,6 +157,7 @@
     <ClCompile Include="..\libs\imgui\imgui.cpp" />
     <ClCompile Include="..\libs\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\libs\imgui\imgui_draw.cpp" />
+    <ClCompile Include="ChaikinCoonsFunctions.cpp" />
     <ClCompile Include="imgui_impl_glfw_gl3.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
@@ -169,6 +170,7 @@
     <ClInclude Include="..\libs\imgui\stb_rect_pack.h" />
     <ClInclude Include="..\libs\imgui\stb_textedit.h" />
     <ClInclude Include="..\libs\imgui\stb_truetype.h" />
+    <ClInclude Include="ChaikinConnsFunctions.h" />
     <ClInclude Include="imgui_impl_glfw_gl3.h" />
   </ItemGroup>
   <ItemGroup>
