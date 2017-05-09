@@ -41,6 +41,9 @@
       <Filter>sources</Filter>
     </ClCompile>
     <ClCompile Include="EsgiShader.cpp">
+	 <Filter>sources</Filter>
+    </ClCompile>
+    <ClCompile Include="ChaikinCoonsFunctions.cpp">
       <Filter>sources</Filter>
     </ClCompile>
   </ItemGroup>
@@ -79,6 +82,9 @@
       <Filter>sources</Filter>
     </ClInclude>
     <ClInclude Include="EsgiShader.h">
+		<Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="ChaikinConnsFunctions.h">
       <Filter>sources</Filter>
     </ClInclude>
   </ItemGroup>

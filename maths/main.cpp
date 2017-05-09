@@ -6,9 +6,11 @@
 
 #include <GLFW\glfw3.h>
 #include <glm\glm.hpp>
+
 #include <glm\gtc\matrix_transform.hpp>
 #include <glm\gtx\transform.hpp>
 #include "Camera.h"
+#include "ChaikinConnsFunctions.h"
 
 Camera *cam;
 GLint gridProgram;
@@ -23,6 +25,7 @@ struct
 	} grid;
 } uniforms;
 
+using namespace glm;
 
 static void error_callback(int error, const char* description)
 {
@@ -147,6 +150,17 @@ int main(int argc, char** argv)
     bool show_test_window = true;
     bool show_another_window = false;
     ImVec4 clear_color = ImColor(114, 144, 154);
+
+
+	std::vector<glm::vec3> courbe;
+	courbe.push_back(glm::vec3(0, 0, 0));
+	courbe.push_back(glm::vec3(1, 0, 0));
+	courbe.push_back(glm::vec3(1, 1, 0));
+
+	std::vector<glm::vec3> chaikinCurve = GetChaikinCurve(courbe, 2);
+
+	for (int i = 0; i < chaikinCurve.size(); i++)
+		printf("Point %d: %f - %f - %f\n", i, chaikinCurve[i].x, chaikinCurve[i].y, chaikinCurve[i].z);
 
     // Main loop
     while (!glfwWindowShouldClose(window))
