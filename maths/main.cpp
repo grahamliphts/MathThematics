@@ -52,8 +52,8 @@ float _highRatio = 0.75f;
 int _iterations = 2;
 bool _showPointChaikin = true;
 
-GLuint _vaoPoint;
-GLuint _vertexBufferPoints;
+GLuint _vaoChaikinCurves, _vaoOriginalCurves;
+GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves;
 
 std::vector<std::vector<glm::vec3>> _chaikinCurves;
 std::vector<std::vector<glm::vec3>> _originalCurves;
@@ -111,8 +111,6 @@ int main(int argc, char** argv)
     if (!glfwInit())
         return 1;
     glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    //glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    //glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
     GLFWwindow* window = glfwCreateWindow(_width, _height, "Coons & Subvision", NULL, NULL);
     glfwMakeContextCurrent(window);
@@ -224,12 +222,22 @@ int main(int argc, char** argv)
 void Initialize()
 {
 	/*VAO Points*/
-	glGenVertexArrays(1, &_vaoPoint);
-	glBindVertexArray(_vaoPoint);
+	glGenVertexArrays(1, &_vaoChaikinCurves);
+	glBindVertexArray(_vaoChaikinCurves);
 
-	glGenBuffers(1, &_vertexBufferPoints);
-	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferPoints);
-	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _chaikinCurves[0].size(), _chaikinCurves[0].data(), GL_STATIC_DRAW);
+	glGenBuffers(1, &_vertexBufferChaikinCurves);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferChaikinCurves);
+	
+	glEnableVertexAttribArray(uniforms.basic.position);
+	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glBindVertexArray(0);
+
+	glGenVertexArrays(1, &_vaoOriginalCurves);
+	glBindVertexArray(_vaoOriginalCurves);
+
+	glGenBuffers(1, &_vertexBufferOriginalCurves);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferOriginalCurves);
 
 	glEnableVertexAttribArray(uniforms.basic.position);
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -291,34 +299,32 @@ void Render(void)
 	glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 
-	SetColorToFragment(_chaikinCurveColor);
+	glBindVertexArray(_vaoChaikinCurves);
 	if (_chaikinCurves.size() > 0)
 	{
+		SetColorToFragment(_chaikinCurveColor);
 		for (int i = 0; i < 4; i++)
 		{
-			MajBuffer(_vertexBufferPoints, _chaikinCurves[i]);
-
+			MajBuffer(_vertexBufferChaikinCurves, _chaikinCurves[i]);
 			if (_showPointChaikin)
-			{
-				glBindVertexArray(_vaoPoint);
 				glDrawArrays(GL_POINTS, 0, _chaikinCurves[i].size());
-				glBindVertexArray(0);
-			}
-
-			glBindVertexArray(_vaoPoint);
 			glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves[i].size());
-			glBindVertexArray(0);
 		}
 	}
-	SetColorToFragment(_originalCurveColor);
+	glBindVertexArray(0);
+
+	glBindVertexArray(_vaoOriginalCurves);
 	if (_originalCurves.size() > 0)
 	{
-		MajBuffer(_vertexBufferPoints, _originalCurves);
-		glBindVertexArray(_vaoPoint);
-		glDrawArrays(GL_LINE_STRIP, 0, _originalCurves.size());
+		SetColorToFragment(_originalCurveColor);
+		for (int i = 0; i < 4; i++)
+		{
+			MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
+			glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
+		}
 	}
-
 	glBindVertexArray(0);
+
 	glUseProgram(0);
 }
 // --------------------------------------------------
@@ -448,9 +454,6 @@ void CreateControlCurves()
 
 	originalCurve.clear();
 	// ----------------------------------------
-
-	if(_chaikinCurves.size() > 0)
-		MajBuffer(_vertexBufferPoints, _chaikinCurves[0]);
 }
 // --------------------------------------------------
 
