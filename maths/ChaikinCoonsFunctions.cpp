@@ -45,3 +45,47 @@ std::vector<std::vector<glm::vec3>> GetChaikinCurves(std::vector<std::vector<glm
 
 	return chaikinCurves;
 }
+
+std::vector<std::vector<glm::vec3>> CoonsPatch(std::vector<std::vector<glm::vec3>> controlPoints)
+{
+	std::vector<std::vector<glm::vec3>> patchPoints;
+
+	if (controlPoints.size() == 4)
+	{
+		patchPoints.push_back(controlPoints[0]);
+
+		for (int j = 1; j < controlPoints[0].size() - 1; j++)
+		{
+			std::vector<glm::vec3> curvePatch;
+			for (int i = 0; i < controlPoints[0].size(); i++)
+			{
+				float x, y, z;
+				int nbPoints = controlPoints[0].size() - 1;
+
+				x = controlPoints[0][i].x;
+				z = controlPoints[2][j].z;
+
+				float y1, y2, yb;
+
+				y1 = (1 - (j * 1.0f / nbPoints)) * controlPoints[0][i].y + (j * 1.0f / nbPoints) * controlPoints[1][i].y;
+				y2 = (1 - (i * 1.0f / nbPoints)) * controlPoints[2][j].y + (i * 1.0f / nbPoints) * controlPoints[3][j].y;
+				yb = controlPoints[0][0].y * (1 - (i * 1.0f / nbPoints)) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[0][nbPoints].y * (i * 1.0f / nbPoints) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[1][0].y * (1 - (i * 1.0f / nbPoints)) * (j * 1.0f / nbPoints)
+					+ controlPoints[1][nbPoints].y * (i * 1.0f / nbPoints) * (j * 1.0f / nbPoints);
+
+				//B(s,t)=c_{0}(0)(1-s)(1-t)+c_{0}(1)s(1-t)+c_{1}(0)(1-s)t+c_{1}(1)st
+
+				y = y1 + y2 + yb;
+
+				curvePatch.push_back(glm::vec3(x, y, z));
+			}
+
+			patchPoints.push_back(curvePatch);
+		}
+
+		patchPoints.push_back(controlPoints[1]);
+	}
+
+	return patchPoints;
+}
