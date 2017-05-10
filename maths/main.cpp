@@ -33,7 +33,7 @@ using namespace glm;
 // --------------------------------------------------
 #pragma region Variables Globales
 Camera *_cam;
-GLint _gridProgram, _basicProgram;
+GLint _gridProgram, _basicProgram, _basicColorProgram;
 int _width = 1500;
 int _height = 800;
 
@@ -44,6 +44,9 @@ ImVec4 _originalCurveColor = ImColor(172, 255, 143);
 int _nbPoints = 3;
 int _limitsXZ = 5;
 int _limitsY = 3;
+
+int _current_curve = 1;
+int _current_point = 1;
 
 //Parameters for Chaikin
 ImVec4 _chaikinCurveColor = ImColor(114, 0, 6);
@@ -56,10 +59,18 @@ bool _showPointChaikin = true;
 ImVec4 _coonsColor = ImColor(4, 33, 144);
 
 GLuint _vaoChaikinCurves, _vaoOriginalCurves, _vaoCoons;
-GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves, _vertexBufferCoons;
+GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves, _vertexBufferCoons, _vertexBufferOriginalCurvesColor;
 
 std::vector<std::vector<glm::vec3>> _chaikinCurves;
 std::vector<std::vector<glm::vec3>> _originalCurves;
+struct Color
+{
+	float r, g, b, a;
+	Color(float r, float g, float b, float a = 1.0f) : r(r), g(g), b(b), a(a) {}
+	Color() : r(0.0f), g(0.0f), b(0.0f), a(1.0f) {}
+};
+std::vector<std::vector<Color>> _colors;
+
 std::vector<std::vector<glm::vec3>> _coonsPatch;
 #pragma endregion
 
@@ -71,8 +82,15 @@ struct
 		int     model_matrix;
 		int     projview_matrix;
 		int     position;
-		int     color;
+		int		color;
 	} basic;
+	struct
+	{
+		int     model_matrix;
+		int     projview_matrix;
+		int     position;
+		int     color;
+	} basicColor;
 	struct
 	{
 		int     projview_matrix;
@@ -154,13 +172,33 @@ int main(int argc, char** argv)
 			_coonsPatch = CoonsPatch(_chaikinCurves);
 		}
 
+		if (ImGui::InputInt("Current curve", &_current_curve, 1))
+		{
+			_current_curve = _current_curve < 1 ? 1 : _current_curve;
+			_current_curve = _current_curve > 4 ? 4 : _current_curve;
+		}
+		if (ImGui::InputInt("Current point", &_current_point, 1))
+		{
+			_current_point = _current_point < 1 ? 1 : _current_point;
+			if (_originalCurves.size() > 0)
+				_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
+		}
+
 		ImGui::Spacing();
 		ImGui::Separator();
 
 		ImGui::Text("Parameters for chaikin curve");
 		ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
-		ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5);
-		ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f);
+		if (ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5))
+		{
+			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+			_coonsPatch = CoonsPatch(_chaikinCurves);
+		}
+		if(ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f))
+		{
+			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+			_coonsPatch = CoonsPatch(_chaikinCurves);
+		}
 		ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
 
 		if (ImGui::Button("Update") && _originalCurves.size() != 0)
@@ -233,7 +271,7 @@ int main(int argc, char** argv)
 #pragma region Initialisation et Shader
 void Initialize()
 {
-	/*VAO Points*/
+	/*VAO Chaikin Curve*/
 	glGenVertexArrays(1, &_vaoChaikinCurves);
 	glBindVertexArray(_vaoChaikinCurves);
 
@@ -245,17 +283,25 @@ void Initialize()
 
 	glBindVertexArray(0);
 
+	/*VAO Original Curve*/
 	glGenVertexArrays(1, &_vaoOriginalCurves);
 	glBindVertexArray(_vaoOriginalCurves);
 
 	glGenBuffers(1, &_vertexBufferOriginalCurves);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferOriginalCurves);
 
-	glEnableVertexAttribArray(uniforms.basic.position);
-	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+	glEnableVertexAttribArray(uniforms.basicColor.position);
+	glVertexAttribPointer(uniforms.basicColor.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glGenBuffers(1, &_vertexBufferOriginalCurvesColor);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferOriginalCurvesColor);
+
+	glEnableVertexAttribArray(uniforms.basicColor.color);
+	glVertexAttribPointer(uniforms.basicColor.color, 4, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 	glBindVertexArray(0);
 
+	/*VAO Original Coons*/
 	glGenVertexArrays(1, &_vaoCoons);
 	glBindVertexArray(_vaoCoons);
 
@@ -270,13 +316,19 @@ void Initialize()
 
 void LoadShaders()
 {
-	EsgiShader gridShader, basicShader;
+	EsgiShader gridShader, basicShader, basicColorShader;
 
 	printf("Load basic fs\n");
 	basicShader.LoadFragmentShader("shaders/basic.frag");
 	printf("Load basic vs\n");
 	basicShader.LoadVertexShader("shaders/basic.vert");
 	basicShader.Create();
+
+	printf("Load basic color fs\n");
+	basicColorShader.LoadFragmentShader("shaders/basicColor.frag");
+	printf("Load basic color vs\n");
+	basicColorShader.LoadVertexShader("shaders/basicColor.vert");
+	basicColorShader.Create();
 
 	printf("Load grid fs\n");
 	gridShader.LoadFragmentShader("shaders/grid.frag");
@@ -288,6 +340,7 @@ void LoadShaders()
 
 	_gridProgram = gridShader.GetProgram();
 	_basicProgram = basicShader.GetProgram();
+	_basicColorProgram = basicColorShader.GetProgram();
 
 	uniforms.grid.projview_matrix = glGetUniformLocation(_gridProgram, "projview_matrix");
 
@@ -295,6 +348,11 @@ void LoadShaders()
 	uniforms.basic.model_matrix = glGetUniformLocation(_basicProgram, "model_matrix");
 	uniforms.basic.position = glGetAttribLocation(_basicProgram, "a_position");
 	uniforms.basic.color = glGetUniformLocation(_basicProgram, "fragmentColor");
+
+	uniforms.basicColor.projview_matrix = glGetUniformLocation(_basicColorProgram, "projview_matrix");
+	uniforms.basicColor.model_matrix = glGetUniformLocation(_basicColorProgram, "model_matrix");
+	uniforms.basicColor.position = glGetAttribLocation(_basicColorProgram, "a_position");
+	uniforms.basicColor.color = glGetAttribLocation(_basicColorProgram, "a_color");
 }
 #pragma endregion
 // --------------------------------------------------
@@ -303,7 +361,7 @@ void LoadShaders()
 // --------------------------------------------------
 // RENDER
 // --------------------------------------------------
-void Render(void)
+void Render()
 {
 	//Parameters
 	glm::vec3 cam_pos = glm::vec3(_cam->posx, _cam->posy, _cam->posz);
@@ -317,7 +375,90 @@ void Render(void)
 	glUniformMatrix4fv(uniforms.grid.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glDrawArrays(GL_POINTS, 0, 1);
 
-	//Draw Point and curves
+
+	//Draw original curves
+	glUseProgram(_basicColorProgram);
+	glUniformMatrix4fv(uniforms.basicColor.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+	glUniformMatrix4fv(uniforms.basicColor.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
+	glBindVertexArray(_vaoOriginalCurves);
+	if (_originalCurves.size() > 0)
+	{
+		int curveAdj = -1;
+		int pointAdj = -1;
+		if (_current_curve - 1 == 0 && _current_point - 1 == _colors[0].size() - 1)
+		{
+			curveAdj = 3;
+			pointAdj = 0;
+		}
+		else if (_current_curve - 1 == 1 && _current_point - 1 == _colors[0].size() - 1)
+		{
+			curveAdj = 3;
+			pointAdj = _colors[0].size() - 1;
+		}
+		else if (_current_curve - 1 == 2 && _current_point - 1 == _colors[0].size() - 1)
+		{
+			curveAdj = 1;
+			pointAdj = 0;
+		}
+		else if (_current_curve - 1 == 3 && _current_point - 1 == _colors[0].size() - 1)
+		{
+			curveAdj = 1;
+			pointAdj = _colors[0].size() - 1;
+		}
+		else if (_current_curve - 1 == 0 && _current_point - 1 == 0)
+		{
+			curveAdj = 2;
+			pointAdj = 0;
+		}
+		else if (_current_curve - 1 == 1 && _current_point - 1 == 0)
+		{
+			curveAdj = 2;
+			pointAdj = _colors[0].size() - 1;
+		}
+		else if (_current_curve - 1 == 2  && _current_point - 1 == 0)
+		{
+			curveAdj = 0;
+			pointAdj = 0;
+		}
+		else if (_current_curve - 1 == 3 && _current_point - 1 == 0)
+		{
+			curveAdj = 0;
+			pointAdj = _colors[0].size() - 1;
+		}
+
+		for (int i = 0; i < _colors.size(); i++)
+		{
+			for (int j = 0; j < _colors[i].size(); j++)
+			{
+				if ((i == _current_curve - 1 && j == _current_point - 1) || (i == curveAdj && j == pointAdj))
+				{
+					_colors[i][j].r = 1.0f;
+					_colors[i][j].b = 0.0f;
+					_colors[i][j].g = 0.0f;
+				}
+				else
+				{
+					_colors[i][j].r = 0.0f;
+					_colors[i][j].b = 0.0f;
+					_colors[i][j].g = 0.0f;
+				}
+			}
+		}
+
+		for (int i = 0; i < 4; i++)
+		{
+			
+			MajBuffer(_vertexBufferOriginalCurvesColor, _colors[i]);
+			MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
+			glDrawArrays(GL_POINTS, 0, _originalCurves[i].size());
+			glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
+		}
+	}
+	glBindVertexArray(0);
+	glUseProgram(0);
+
+	//Draw Chaikin curves
 	glUseProgram(_basicProgram);
 	glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
@@ -336,18 +477,7 @@ void Render(void)
 	}
 	glBindVertexArray(0);
 
-	glBindVertexArray(_vaoOriginalCurves);
-	if (_originalCurves.size() > 0)
-	{
-		SetColorToFragment(_originalCurveColor);
-		for (int i = 0; i < 4; i++)
-		{
-			MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
-			glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
-		}
-	}
-	glBindVertexArray(0);
-
+	//Draw Chaikin coons
 	glBindVertexArray(_vaoCoons);
 	if (_chaikinCurves.size() == 4 && _coonsPatch.size() > 0)
 	{
@@ -370,7 +500,6 @@ void Render(void)
 		}
 	}
 	glBindVertexArray(0);
-
 	glUseProgram(0);
 }
 // --------------------------------------------------
@@ -446,59 +575,89 @@ void CallbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int
 void CreateControlCurves()
 {
 	_originalCurves.clear();
+	_colors.clear();
 
 	std::vector<glm::vec3> originalCurve;
+	std::vector<Color> color;
 
 	// ----------------------------------------
 	originalCurve.push_back(glm::vec3(0, 0, 0));
+	color.push_back(Color());
 	for (int i = 1; i < _nbPoints - 1; i++)
 	{
 		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
 		originalCurve.push_back(glm::vec3((i * 1.f / (_nbPoints - 1) * _limitsXZ), randY, 0));
+		color.push_back(Color());
 	}
 	originalCurve.push_back(glm::vec3(_limitsXZ, 0, 0));
+	color.push_back(Color());
+
 	_originalCurves.push_back(originalCurve);
+	_colors.push_back(color);
 
 	originalCurve.clear();
+	color.clear();
+
 	// ----------------------------------------
 
 	// ----------------------------------------
 	originalCurve.push_back(glm::vec3(0, 0, _limitsXZ));
+	color.push_back(Color());
 	for (int i = 1; i < _nbPoints - 1; i++)
 	{
 		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
 		originalCurve.push_back(glm::vec3((i * 1.f / (_nbPoints - 1) * _limitsXZ), randY, _limitsXZ));
+		color.push_back(Color());
 	}
 	originalCurve.push_back(glm::vec3(_limitsXZ, 0, _limitsXZ));
+	color.push_back(Color());
+
 	_originalCurves.push_back(originalCurve);
+	_colors.push_back(color);
 
 	originalCurve.clear();
+	color.clear();
 	// ----------------------------------------
 
 	// ----------------------------------------
 	originalCurve.push_back(glm::vec3(0, 0, 0));
+	color.push_back(Color());
 	for (int i = 1; i < _nbPoints - 1; i++)
 	{
 		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
 		originalCurve.push_back(glm::vec3(0, randY, (i * 1.f / (_nbPoints - 1) * _limitsXZ)));
+		color.push_back(Color());
 	}
 	originalCurve.push_back(glm::vec3(0, 0, _limitsXZ));
+	color.push_back(Color());
+
 	_originalCurves.push_back(originalCurve);
+	_colors.push_back(color);
 
 	originalCurve.clear();
+	color.clear();
+
 	// ----------------------------------------
 
 	// ----------------------------------------
 	originalCurve.push_back(glm::vec3(_limitsXZ, 0, 0));
+	color.push_back(Color());
 	for (int i = 1; i < _nbPoints - 1; i++)
 	{
 		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
 		originalCurve.push_back(glm::vec3(_limitsXZ, randY, (i * 1.f / (_nbPoints - 1) * _limitsXZ)));
+		color.push_back(Color());
 	}
 	originalCurve.push_back(glm::vec3(_limitsXZ, 0, _limitsXZ));
+	color.push_back(Color());
+
 	_originalCurves.push_back(originalCurve);
+	_colors.push_back(color);
 
 	originalCurve.clear();
+	color.clear();
+
+	MajBuffer(_vertexBufferOriginalCurvesColor, _colors);
 	// ----------------------------------------
 }
 // --------------------------------------------------

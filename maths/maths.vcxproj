@@ -184,6 +184,8 @@
     <None Include="packages.config" />
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\basicColor.frag" />
+    <None Include="shaders\basicColor.vert" />
     <None Include="shaders\grid.frag" />
     <None Include="shaders\grid.geom" />
     <None Include="shaders\grid.vert" />
