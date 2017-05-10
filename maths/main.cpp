@@ -229,7 +229,7 @@ void Initialize()
 
 	glGenBuffers(1, &_vertexBufferPoints);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferPoints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _chaikinCurves.size(), _chaikinCurves.data(), GL_STATIC_DRAW);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _chaikinCurves[0].size(), _chaikinCurves[0].data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(uniforms.basic.position);
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -292,25 +292,33 @@ void Render(void)
 	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 
 	SetColorToFragment(_chaikinCurveColor);
-	MajBuffer(_vertexBufferPoints, _chaikinCurves);
-
-	if (_showPointChaikin)
+	if (_chaikinCurves.size() > 0)
 	{
+		for (int i = 0; i < 4; i++)
+		{
+			MajBuffer(_vertexBufferPoints, _chaikinCurves[i]);
+
+			if (_showPointChaikin)
+			{
+				glBindVertexArray(_vaoPoint);
+				glDrawArrays(GL_POINTS, 0, _chaikinCurves[i].size());
+				glBindVertexArray(0);
+			}
+
+			glBindVertexArray(_vaoPoint);
+			glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves[i].size());
+			glBindVertexArray(0);
+		}
+	}
+	SetColorToFragment(_originalCurveColor);
+	if (_originalCurves.size() > 0)
+	{
+		MajBuffer(_vertexBufferPoints, _originalCurves);
 		glBindVertexArray(_vaoPoint);
-		glDrawArrays(GL_POINTS, 0, _chaikinCurves.size());
-		glBindVertexArray(0);
+		glDrawArrays(GL_LINE_STRIP, 0, _originalCurves.size());
 	}
 
-	glBindVertexArray(_vaoPoint);
-	glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves.size());
 	glBindVertexArray(0);
-
-	SetColorToFragment(_originalCurveColor);
-	MajBuffer(_vertexBufferPoints, _originalCurves);
-	glBindVertexArray(_vaoPoint);
-	glDrawArrays(GL_LINE_STRIP, 0, _originalCurves.size());
-	glBindVertexArray(0);
-
 	glUseProgram(0);
 }
 // --------------------------------------------------
@@ -441,7 +449,8 @@ void CreateControlCurves()
 	originalCurve.clear();
 	// ----------------------------------------
 
-	MajBuffer(_vertexBufferPoints, _chaikinCurves);
+	if(_chaikinCurves.size() > 0)
+		MajBuffer(_vertexBufferPoints, _chaikinCurves[0]);
 }
 // --------------------------------------------------
 
@@ -449,6 +458,8 @@ void CreateControlCurves()
 template<typename T>
 void MajBuffer(int vertexBuffer, std::vector<T> &vecteur)
 {
+	if (vecteur.size() <= 0)
+		return;
 	glBindBuffer(GL_ARRAY_BUFFER, vertexBuffer);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(T) * vecteur.size(), vecteur.data(), GL_STATIC_DRAW);
 }
