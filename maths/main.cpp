@@ -52,8 +52,11 @@ float _highRatio = 0.75f;
 int _iterations = 2;
 bool _showPointChaikin = true;
 
-GLuint _vaoChaikinCurves, _vaoOriginalCurves;
-GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves;
+//Parameters for Coons
+ImVec4 _coonsColor = ImColor(4, 33, 144);
+
+GLuint _vaoChaikinCurves, _vaoOriginalCurves, _vaoCoons;
+GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves, _vertexBufferCoons;
 
 std::vector<std::vector<glm::vec3>> _chaikinCurves;
 std::vector<std::vector<glm::vec3>> _originalCurves;
@@ -148,6 +151,7 @@ int main(int argc, char** argv)
 		{
 			CreateControlCurves();
 			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+			_coonsPatch = CoonsPatch(_chaikinCurves);
 		}
 
 		ImGui::Spacing();
@@ -160,18 +164,22 @@ int main(int argc, char** argv)
 		ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
 
 		if (ImGui::Button("Update") && _originalCurves.size() != 0)
+		{
 			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+			_coonsPatch = CoonsPatch(_chaikinCurves);
+		}
 
 		ImGui::Spacing();
 		ImGui::Separator();
 
 		ImGui::Text("Parameters for coons");
+		ImGui::ColorEdit3("Coons color", (float*)&_coonsColor);
 
-		if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
-			_coonsPatch = CoonsPatch(_chaikinCurves);
+		//if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
+		//	_coonsPatch = CoonsPatch(_chaikinCurves);
 
-		ImGui::Spacing();
-		ImGui::Separator();
+		//ImGui::Spacing();
+		//ImGui::Separator();
 
         if (ImGui::Button("Test Window")) 
 			show_test_window ^= 1;
@@ -242,6 +250,17 @@ void Initialize()
 
 	glGenBuffers(1, &_vertexBufferOriginalCurves);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferOriginalCurves);
+
+	glEnableVertexAttribArray(uniforms.basic.position);
+	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glBindVertexArray(0);
+
+	glGenVertexArrays(1, &_vaoCoons);
+	glBindVertexArray(_vaoCoons);
+
+	glGenBuffers(1, &_vertexBufferCoons);
+	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferCoons);
 
 	glEnableVertexAttribArray(uniforms.basic.position);
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -325,6 +344,18 @@ void Render(void)
 		{
 			MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
 			glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
+		}
+	}
+	glBindVertexArray(0);
+
+	glBindVertexArray(_vaoCoons);
+	if (_chaikinCurves.size() == 4 && _coonsPatch.size() > 0)
+	{
+		SetColorToFragment(_coonsColor);
+		for (int i = 0; i < _chaikinCurves[0].size(); i++)
+		{
+			MajBuffer(_vertexBufferCoons, _coonsPatch[i]);
+			glDrawArrays(GL_LINE_STRIP, 0, _coonsPatch[i].size());
 		}
 	}
 	glBindVertexArray(0);

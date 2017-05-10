@@ -76,7 +76,7 @@ std::vector<std::vector<glm::vec3>> CoonsPatch(std::vector<std::vector<glm::vec3
 
 				//B(s,t)=c_{0}(0)(1-s)(1-t)+c_{0}(1)s(1-t)+c_{1}(0)(1-s)t+c_{1}(1)st
 
-				y = y1 + y2 + yb;
+				y = y1 + y2 - yb;
 
 				curvePatch.push_back(glm::vec3(x, y, z));
 			}
