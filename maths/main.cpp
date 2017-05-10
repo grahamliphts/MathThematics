@@ -118,6 +118,7 @@ void CreateControlCurves();
 template<typename T>
 void MajBuffer(int vertexBuffer, std::vector<T> &vecteur);
 void SetColorToFragment(ImVec4 &color);
+void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, int &pointAdj);
 #pragma endregion
 // --------------------------------------------------
 
@@ -172,40 +173,65 @@ int main(int argc, char** argv)
 			_coonsPatch = CoonsPatch(_chaikinCurves);
 		}
 
-		if (ImGui::InputInt("Current curve", &_current_curve, 1))
+		if (_originalCurves.size() > 0)
 		{
-			_current_curve = _current_curve < 1 ? 1 : _current_curve;
-			_current_curve = _current_curve > 4 ? 4 : _current_curve;
-		}
-		if (ImGui::InputInt("Current point", &_current_point, 1))
-		{
-			_current_point = _current_point < 1 ? 1 : _current_point;
-			if (_originalCurves.size() > 0)
-				_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
-		}
+			if (ImGui::InputInt("Current curve", &_current_curve, 1))
+			{
+				_current_curve = _current_curve < 1 ? 1 : _current_curve;
+				_current_curve = _current_curve > 4 ? 4 : _current_curve;
+			}
+			if (ImGui::InputInt("Current point", &_current_point, 1))
+			{
+				_current_point = _current_point < 1 ? 1 : _current_point;
+				if (_originalCurves.size() > 0)
+					_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
+			}
 
-		ImGui::Spacing();
-		ImGui::Separator();
+			std::cout << _originalCurves[_current_curve - 1][_current_point - 1].x << std::endl;
+			int xyzPoint[4] = { _originalCurves[_current_curve - 1][_current_point - 1].x, _originalCurves[_current_curve - 1][_current_point - 1].y, _originalCurves[_current_curve - 1][_current_point - 1].z, 255 };
+			if (ImGui::SliderInt3("X Y Z", xyzPoint, -10, 10))
+			{
+				_originalCurves[_current_curve - 1][_current_point - 1].x = xyzPoint[0];
+				_originalCurves[_current_curve - 1][_current_point - 1].y = xyzPoint[1];
+				_originalCurves[_current_curve - 1][_current_point - 1].z = xyzPoint[2];
 
-		ImGui::Text("Parameters for chaikin curve");
-		ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
-		if (ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5))
-		{
-			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-			_coonsPatch = CoonsPatch(_chaikinCurves);
-		}
-		if(ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f))
-		{
-			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-			_coonsPatch = CoonsPatch(_chaikinCurves);
-		}
-		ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
+				int curveAdj = -1, pointAdj = -1;
+				GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
+				if (curveAdj != -1 && pointAdj != -1)
+				{
+					_originalCurves[curveAdj][pointAdj].x = xyzPoint[0];
+					_originalCurves[curveAdj][pointAdj].y = xyzPoint[1];
+					_originalCurves[curveAdj][pointAdj].z = xyzPoint[2];
+				}
 
-		if (ImGui::Button("Update") && _originalCurves.size() != 0)
-		{
-			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-			_coonsPatch = CoonsPatch(_chaikinCurves);
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::Text("Parameters for chaikin curve");
+			ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
+			if (ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5))
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+			if (ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f))
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+			ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
+
+			if (ImGui::Button("Update") && _originalCurves.size() != 0)
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
 		}
+		
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -384,49 +410,8 @@ void Render()
 	glBindVertexArray(_vaoOriginalCurves);
 	if (_originalCurves.size() > 0)
 	{
-		int curveAdj = -1;
-		int pointAdj = -1;
-		if (_current_curve - 1 == 0 && _current_point - 1 == _colors[0].size() - 1)
-		{
-			curveAdj = 3;
-			pointAdj = 0;
-		}
-		else if (_current_curve - 1 == 1 && _current_point - 1 == _colors[0].size() - 1)
-		{
-			curveAdj = 3;
-			pointAdj = _colors[0].size() - 1;
-		}
-		else if (_current_curve - 1 == 2 && _current_point - 1 == _colors[0].size() - 1)
-		{
-			curveAdj = 1;
-			pointAdj = 0;
-		}
-		else if (_current_curve - 1 == 3 && _current_point - 1 == _colors[0].size() - 1)
-		{
-			curveAdj = 1;
-			pointAdj = _colors[0].size() - 1;
-		}
-		else if (_current_curve - 1 == 0 && _current_point - 1 == 0)
-		{
-			curveAdj = 2;
-			pointAdj = 0;
-		}
-		else if (_current_curve - 1 == 1 && _current_point - 1 == 0)
-		{
-			curveAdj = 2;
-			pointAdj = _colors[0].size() - 1;
-		}
-		else if (_current_curve - 1 == 2  && _current_point - 1 == 0)
-		{
-			curveAdj = 0;
-			pointAdj = 0;
-		}
-		else if (_current_curve - 1 == 3 && _current_point - 1 == 0)
-		{
-			curveAdj = 0;
-			pointAdj = _colors[0].size() - 1;
-		}
-
+		int curveAdj = -1, pointAdj = -1;
+		GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
 		for (int i = 0; i < _colors.size(); i++)
 		{
 			for (int j = 0; j < _colors[i].size(); j++)
@@ -679,4 +664,48 @@ void SetColorToFragment(ImVec4 &color)
 	_fragmentColor[2] = color.z;
 	_fragmentColor[3] = color.w;
 	glProgramUniform4fv(_basicProgram, uniforms.basic.color, 1, _fragmentColor);
+}
+
+void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, int &pointAdj)
+{
+	if (current_curve == 0 && current_point == _colors[0].size() - 1)
+	{
+		curveAdj = 3;
+		pointAdj = 0;
+	}
+	else if (current_curve == 1 && current_point == _colors[0].size() - 1)
+	{
+		curveAdj = 3;
+		pointAdj = _colors[0].size() - 1;
+	}
+	else if (current_curve == 2 && current_point == _colors[0].size() - 1)
+	{
+		curveAdj = 1;
+		pointAdj = 0;
+	}
+	else if (current_curve == 3 && current_point == _colors[0].size() - 1)
+	{
+		curveAdj = 1;
+		pointAdj = _colors[0].size() - 1;
+	}
+	else if (current_curve == 0 && current_point == 0)
+	{
+		curveAdj = 2;
+		pointAdj = 0;
+	}
+	else if (current_curve == 1 && current_point == 0)
+	{
+		curveAdj = 2;
+		pointAdj = _colors[0].size() - 1;
+	}
+	else if (current_curve == 2 && current_point == 0)
+	{
+		curveAdj = 0;
+		pointAdj = 0;
+	}
+	else if (current_curve == 3 && current_point == 0)
+	{
+		curveAdj = 0;
+		pointAdj = _colors[0].size() - 1;
+	}
 }
