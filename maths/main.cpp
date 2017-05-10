@@ -357,6 +357,17 @@ void Render(void)
 			MajBuffer(_vertexBufferCoons, _coonsPatch[i]);
 			glDrawArrays(GL_LINE_STRIP, 0, _coonsPatch[i].size());
 		}
+		
+		for (int j = 0; j < _coonsPatch.size(); j++)
+		{
+			std::vector<glm::vec3> curvePatch;
+			for (int i = 0; i < _coonsPatch.size(); i++)
+			{
+				curvePatch.push_back(_coonsPatch[i][j]);
+			}
+			MajBuffer(_vertexBufferCoons, curvePatch);
+			glDrawArrays(GL_LINE_STRIP, 0, curvePatch.size());
+		}
 	}
 	glBindVertexArray(0);
 
