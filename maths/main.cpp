@@ -55,8 +55,8 @@ bool _showPointChaikin = true;
 GLuint _vaoPoint;
 GLuint _vertexBufferPoints;
 
-std::vector<glm::vec3> _chaikinCurve;
-std::vector<glm::vec3> _originalCurve;
+std::vector<std::vector<glm::vec3>> _chaikinCurves;
+std::vector<std::vector<glm::vec3>> _originalCurves;
 #pragma endregion
 
 #pragma region Structures
@@ -148,7 +148,7 @@ int main(int argc, char** argv)
 		if (ImGui::Button("Create New Curves"))
 		{
 			CreateControlCurves();
-			_chaikinCurve = GetChaikinCurve(_originalCurve, _iterations, _lowerRatio, _highRatio);
+			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
 		}
 
 		ImGui::Spacing();
@@ -159,8 +159,9 @@ int main(int argc, char** argv)
 		ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5);
 		ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f);
 		ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
-		if (ImGui::Button("Update") && _originalCurve.size() > 2)
-			_chaikinCurve = GetChaikinCurve(_originalCurve, _iterations, _lowerRatio, _highRatio);
+
+		if (ImGui::Button("Update") && _originalCurves.size() != 0)
+			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
 
 		ImGui::Spacing();
 		ImGui::Separator();
@@ -228,7 +229,7 @@ void Initialize()
 
 	glGenBuffers(1, &_vertexBufferPoints);
 	glBindBuffer(GL_ARRAY_BUFFER, _vertexBufferPoints);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _chaikinCurve.size(), _chaikinCurve.data(), GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(glm::vec3) * _chaikinCurves.size(), _chaikinCurves.data(), GL_STATIC_DRAW);
 
 	glEnableVertexAttribArray(uniforms.basic.position);
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
@@ -291,23 +292,23 @@ void Render(void)
 	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
 
 	SetColorToFragment(_chaikinCurveColor);
-	MajBuffer(_vertexBufferPoints, _chaikinCurve);
+	MajBuffer(_vertexBufferPoints, _chaikinCurves);
 
 	if (_showPointChaikin)
 	{
 		glBindVertexArray(_vaoPoint);
-		glDrawArrays(GL_POINTS, 0, _chaikinCurve.size());
+		glDrawArrays(GL_POINTS, 0, _chaikinCurves.size());
 		glBindVertexArray(0);
 	}
 
 	glBindVertexArray(_vaoPoint);
-	glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurve.size());
+	glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves.size());
 	glBindVertexArray(0);
 
 	SetColorToFragment(_originalCurveColor);
-	MajBuffer(_vertexBufferPoints, _originalCurve);
+	MajBuffer(_vertexBufferPoints, _originalCurves);
 	glBindVertexArray(_vaoPoint);
-	glDrawArrays(GL_LINE_STRIP, 0, _originalCurve.size());
+	glDrawArrays(GL_LINE_STRIP, 0, _originalCurves.size());
 	glBindVertexArray(0);
 
 	glUseProgram(0);
@@ -384,22 +385,64 @@ void CallbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int
 
 void CreateControlCurves()
 {
-	_originalCurve.clear();
+	_originalCurves.clear();
 
-	_originalCurve.push_back(glm::vec3(0, 0, 0));
+	std::vector<glm::vec3> originalCurve;
+
+	// ----------------------------------------
+	originalCurve.push_back(glm::vec3(0, 0, 0));
 	for (int i = 1; i < _nbPoints - 1; i++)
 	{
 		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
-		_originalCurve.push_back(glm::vec3((i * 1.f / (_nbPoints - 1) * _limitsXZ), randY, 0));
+		originalCurve.push_back(glm::vec3((i * 1.f / (_nbPoints - 1) * _limitsXZ), randY, 0));
 	}
-	_originalCurve.push_back(glm::vec3(_limitsXZ, 0, 0));
+	originalCurve.push_back(glm::vec3(_limitsXZ, 0, 0));
+	_originalCurves.push_back(originalCurve);
 
-	MajBuffer(_vertexBufferPoints, _chaikinCurve);
+	originalCurve.clear();
+	// ----------------------------------------
 
-	for (int i = 0; i < _chaikinCurve.size(); i++)
-		printf("Point %d: %f - %f - %f\n", i, _chaikinCurve[i].x, _chaikinCurve[i].y, _chaikinCurve[i].z);
+	// ----------------------------------------
+	originalCurve.push_back(glm::vec3(0, 0, _limitsXZ));
+	for (int i = 1; i < _nbPoints - 1; i++)
+	{
+		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
+		originalCurve.push_back(glm::vec3((i * 1.f / (_nbPoints - 1) * _limitsXZ), randY, _limitsXZ));
+	}
+	originalCurve.push_back(glm::vec3(_limitsXZ, 0, _limitsXZ));
+	_originalCurves.push_back(originalCurve);
+
+	originalCurve.clear();
+	// ----------------------------------------
+
+	// ----------------------------------------
+	originalCurve.push_back(glm::vec3(0, 0, 0));
+	for (int i = 1; i < _nbPoints - 1; i++)
+	{
+		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
+		originalCurve.push_back(glm::vec3(0, randY, (i * 1.f / (_nbPoints - 1) * _limitsXZ)));
+	}
+	originalCurve.push_back(glm::vec3(0, 0, _limitsXZ));
+	_originalCurves.push_back(originalCurve);
+
+	originalCurve.clear();
+	// ----------------------------------------
+
+	// ----------------------------------------
+	originalCurve.push_back(glm::vec3(_limitsXZ, 0, 0));
+	for (int i = 1; i < _nbPoints - 1; i++)
+	{
+		float randY = (rand() % (_limitsY * 2 + 1) - _limitsY) * 0.1f;
+		originalCurve.push_back(glm::vec3(_limitsXZ, randY, (i * 1.f / (_nbPoints - 1) * _limitsXZ)));
+	}
+	originalCurve.push_back(glm::vec3(_limitsXZ, 0, _limitsXZ));
+	_originalCurves.push_back(originalCurve);
+
+	originalCurve.clear();
+	// ----------------------------------------
+
+	MajBuffer(_vertexBufferPoints, _chaikinCurves);
 }
-
 // --------------------------------------------------
 
 
