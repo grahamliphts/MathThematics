@@ -158,6 +158,7 @@
     <ClCompile Include="..\libs\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\libs\imgui\imgui_draw.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Cube.cpp" />
     <ClCompile Include="EsgiShader.cpp" />
     <ClCompile Include="ChaikinCoonsFunctions.cpp" />
     <ClCompile Include="imgui_impl_glfw_gl3.cpp" />
@@ -175,6 +176,7 @@
     <ClInclude Include="..\libs\imgui\stb_truetype.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="ChaikinConnsFunctions.h" />
+    <ClInclude Include="Cube.h" />
     <ClInclude Include="EsgiShader.h" />
     <ClInclude Include="imgui_impl_glfw_gl3.h" />
     <ClInclude Include="Quaternion.hpp" />
