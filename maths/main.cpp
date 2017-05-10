@@ -57,6 +57,7 @@ GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves;
 
 std::vector<std::vector<glm::vec3>> _chaikinCurves;
 std::vector<std::vector<glm::vec3>> _originalCurves;
+std::vector<std::vector<glm::vec3>> _coonsPatch;
 #pragma endregion
 
 #pragma region Structures
@@ -165,6 +166,9 @@ int main(int argc, char** argv)
 		ImGui::Separator();
 
 		ImGui::Text("Parameters for coons");
+
+		if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
+			_coonsPatch = CoonsPatch(_chaikinCurves);
 
 		ImGui::Spacing();
 		ImGui::Separator();
