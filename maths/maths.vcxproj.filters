@@ -52,6 +52,9 @@
     <ClCompile Include="Cube.cpp">
       <Filter>sources</Filter>
     </ClCompile>
+    <ClCompile Include="Subdivision.cpp">
+      <Filter>sources</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="imgui_impl_glfw_gl3.h">
@@ -93,7 +96,12 @@
     <ClInclude Include="EsgiShader.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="Cube.h" />
+    <ClInclude Include="Subdivision.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Cube.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />
