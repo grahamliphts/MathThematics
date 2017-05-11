@@ -11,8 +11,8 @@ Camera::Camera()
     deltaStrafe = 0;
 
     posx = 0.0f;
-    posy = -1.0f;
-    posz = -3.0f;
+    posy = -2.0f;
+    posz = -5.0f;
 
     dirx = 0.0f;
     diry = 0.0f;

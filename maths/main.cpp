@@ -312,7 +312,10 @@ void Render()
 		//Draw original curves
 		glUseProgram(_basicColorProgram);
 		glUniformMatrix4fv(uniforms.basicColor.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+
+		model_mat = glm::translate(glm::vec3(-2.5, 0, -2.5));
 		glUniformMatrix4fv(uniforms.basicColor.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
 
 		glBindVertexArray(_vaoOriginalCurves);
 		if (_originalCurves.size() > 0)
@@ -717,9 +720,7 @@ void DrawUI()
 
 			ImGui::Text("Parameters for coons");
 			ImGui::ColorEdit3("Coons color", (float*)&_coonsColor);
-
 		}
-		
 	}
 	else
 	{
@@ -752,6 +753,6 @@ void DrawUI()
 	ImGui::End();
 
 	ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
-	bool show_test_window = true;
-	ImGui::ShowTestWindow(&show_test_window);
+	//bool show_test_window = true;
+	//ImGui::ShowTestWindow(&show_test_window);
 }

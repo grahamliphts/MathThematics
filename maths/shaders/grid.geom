@@ -9,7 +9,7 @@ uniform mat4 projview_matrix;
 void main()
 {
 	//Draw axes
-	float size = 2;
+	float size = 10;
 
 	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(size, 0, 0, 0.0));
 	EmitVertex();
@@ -31,6 +31,7 @@ void main()
 
 	//Draw grid
 	/*
+	float size = 2;
 	float spacing = size / 10;
 	for(int i = -10; i <= 10; i++)
 	{
