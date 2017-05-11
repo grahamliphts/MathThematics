@@ -21,6 +21,17 @@ void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int
 
 				adjCenter.push_back(vertexCenterAdj);
 			}
+
+			int nbPoint = 6;
+			glm::vec3 newVertexCenter = (1 - Perturbation(nbPoint)) * vertexCenter;
+
+			glm::vec3 somme(0, 0, 0);
+			for (int i = 0; i < vertexFace.size(); i++)
+				somme += vertexFace[i];
+			for (int i = 0; i < adjCenter.size(); i++)
+				somme += adjCenter[i];
+
+			newVertexCenter = newVertexCenter + (Perturbation(nbPoint) / nbPoint) * somme;
 		}
 	}
 }
@@ -84,4 +95,9 @@ std::vector<int> getAdjacentFaces(std::vector<int> faces, int idFace)
 	}
 
 	return adjFaces;
+}
+
+float Perturbation(int n)
+{
+	return (1 / 9.0f) * (4 - 2 * cos(2 * M_PI / n));
 }
