@@ -62,8 +62,17 @@ std::vector<std::vector<glm::vec3>> CoonsPatch(std::vector<std::vector<glm::vec3
 				float x, y, z;
 				int nbPoints = controlPoints[0].size() - 1;
 
-				x = controlPoints[0][i].x;
-				z = controlPoints[2][j].z;
+
+				float x1, x2, xb;
+
+				x1 = (1 - (j * 1.0f / nbPoints)) * controlPoints[0][i].x + (j * 1.0f / nbPoints) * controlPoints[1][i].x;
+				x2 = (1 - (i * 1.0f / nbPoints)) * controlPoints[2][j].x + (i * 1.0f / nbPoints) * controlPoints[3][j].x;
+				xb = controlPoints[0][0].x * (1 - (i * 1.0f / nbPoints)) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[0][nbPoints].x * (i * 1.0f / nbPoints) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[1][0].x * (1 - (i * 1.0f / nbPoints)) * (j * 1.0f / nbPoints)
+					+ controlPoints[1][nbPoints].x * (i * 1.0f / nbPoints) * (j * 1.0f / nbPoints);
+
+				x = x1 + x2 - xb;
 
 				float y1, y2, yb;
 
@@ -77,6 +86,18 @@ std::vector<std::vector<glm::vec3>> CoonsPatch(std::vector<std::vector<glm::vec3
 				//B(s,t)=c_{0}(0)(1-s)(1-t)+c_{0}(1)s(1-t)+c_{1}(0)(1-s)t+c_{1}(1)st
 
 				y = y1 + y2 - yb;
+
+				float z1, z2, zb;
+
+				z1 = (1 - (j * 1.0f / nbPoints)) * controlPoints[0][i].z + (j * 1.0f / nbPoints) * controlPoints[1][i].z;
+				z2 = (1 - (i * 1.0f / nbPoints)) * controlPoints[2][j].z + (i * 1.0f / nbPoints) * controlPoints[3][j].z;
+				zb = controlPoints[0][0].z * (1 - (i * 1.0f / nbPoints)) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[0][nbPoints].y * (i * 1.0f / nbPoints) * (1 - (j * 1.0f / nbPoints))
+					+ controlPoints[1][0].z * (1 - (i * 1.0f / nbPoints)) * (j * 1.0f / nbPoints)
+					+ controlPoints[1][nbPoints].z * (i * 1.0f / nbPoints) * (j * 1.0f / nbPoints);
+
+
+				z = z1 + z2 - zb;
 
 				curvePatch.push_back(glm::vec3(x, y, z));
 			}

@@ -1,6 +1,5 @@
 #include "Cube.h"
 
-
 Cube::~Cube()
 {
 	glDeleteVertexArrays(1, &vao);
@@ -11,29 +10,25 @@ Cube::~Cube()
 void Cube::draw() const
 {
 	glBindVertexArray(vao);
-
-	glDrawArrays(GL_TRIANGLES, 0, 36);
-
+	glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
 
-void Cube::initialize()
+void Cube::initialize(int uPosition)
 {
-	IndexCount = sizeof(Faces) / sizeof(Faces[0]);
-
 	glGenVertexArrays(1, &vao);
+	glBindVertexArray(vao);
 
 	glGenBuffers(1, &positions);
-	glGenBuffers(1, &indices);
-
-	glBindVertexArray(vao);
 	glBindBuffer(GL_ARRAY_BUFFER, positions);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Verts), Verts, GL_STATIC_DRAW);
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(Faces), Faces, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) *  verts.size(), &verts[0], GL_STATIC_DRAW);
 
-	//glEnableVertexAttribArray(PositionSlot);
-	//glVertexAttribPointer(PositionSlot, 3, GL_FLOAT, GL_FALSE, stride, 0);
+	glEnableVertexAttribArray(uPosition);
+	glVertexAttribPointer(uPosition, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+	glGenBuffers(1, &indices);
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * faces.size(), &faces[0], GL_STATIC_DRAW);
 
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);

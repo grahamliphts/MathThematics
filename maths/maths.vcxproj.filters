@@ -93,7 +93,12 @@
     <ClInclude Include="EsgiShader.h">
       <Filter>sources</Filter>
     </ClInclude>
-    <ClInclude Include="Cube.h" />
+    <ClInclude Include="Cube.h">
+      <Filter>sources</Filter>
+    </ClInclude>
+    <ClInclude Include="Uniforms.h">
+      <Filter>sources</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\README.txt" />

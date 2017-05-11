@@ -1,9 +1,11 @@
 #pragma once
 #include <GL/gl3w.h>
+#include <vector>
 
 class Cube
 {
-	const int Faces[36] = {
+	std::vector<int> faces = 
+	{
 		// front
 		0, 1, 2,
 		2, 3, 0,
@@ -21,9 +23,11 @@ class Cube
 		1, 0, 4,
 		// right
 		3, 2, 6,
-		6, 7, 3  };
+		6, 7, 3  
+	};
 
-	const float Verts[24] = {
+	std::vector<float> verts = 
+	{
 		// front
 		-1.0, -1.0,  1.0,
 		1.0, -1.0,  1.0,
@@ -33,21 +37,18 @@ class Cube
 		-1.0, -1.0, -1.0,
 		1.0, -1.0, -1.0,
 		1.0,  1.0, -1.0,
-		-1.0,  1.0, -1.0 };
-
-	const GLuint stride = 3 * sizeof(float);
+		-1.0,  1.0, -1.0 
+	};
 
 	GLuint vao; //vao
 	GLuint positions; //vbo positions
 	GLuint indices; //vbo indices
 
-	GLsizei IndexCount;
-
 public:
 	~Cube();
 
 	void draw() const;
-	void initialize();
+	void initialize(int uPosition);
 };
 
 // ? extern const GLuint PositionSlot;

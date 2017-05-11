@@ -23,16 +23,41 @@
 #pragma region Include Files
 #include "Camera.h"
 #include "ChaikinConnsFunctions.h"
+#include "Cube.h"
 #pragma endregion
 // --------------------------------------------------
 
 using namespace glm;
 
+#pragma region Structures
+struct
+{
+	struct
+	{
+		int     model_matrix;
+		int     projview_matrix;
+		int     position;
+		int		color;
+	} basic;
+	struct
+	{
+		int     model_matrix;
+		int     projview_matrix;
+		int     position;
+		int     color;
+	} basicColor;
+	struct
+	{
+		int     projview_matrix;
+	} grid;
+} uniforms;
+#pragma endregion
 // --------------------------------------------------
 // VARIABLES GLOBALES
 // --------------------------------------------------
 #pragma region Variables Globales
 Camera *_cam;
+Cube *_cube;
 GLint _gridProgram, _basicProgram, _basicColorProgram;
 int _width = 1500;
 int _height = 800;
@@ -74,29 +99,7 @@ std::vector<std::vector<Color>> _colors;
 std::vector<std::vector<glm::vec3>> _coonsPatch;
 #pragma endregion
 
-#pragma region Structures
-struct
-{
-	struct
-	{
-		int     model_matrix;
-		int     projview_matrix;
-		int     position;
-		int		color;
-	} basic;
-	struct
-	{
-		int     model_matrix;
-		int     projview_matrix;
-		int     position;
-		int     color;
-	} basicColor;
-	struct
-	{
-		int     projview_matrix;
-	} grid;
-} uniforms;
-#pragma endregion
+
 // --------------------------------------------------
 
 
@@ -128,6 +131,7 @@ void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, i
 int main(int argc, char** argv)
 {
 	_cam = new Camera();
+	_cube = new Cube();
 
     // Setup window
     glfwSetErrorCallback(ErrorCallback);
@@ -338,6 +342,8 @@ void Initialize()
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 	glBindVertexArray(0);
+
+	_cube->initialize(uniforms.basic.position);
 }
 
 void LoadShaders()
@@ -482,9 +488,12 @@ void Render()
 			}
 			MajBuffer(_vertexBufferCoons, curvePatch);
 			glDrawArrays(GL_LINE_STRIP, 0, curvePatch.size());
+			glDrawArrays(GL_POINTS, 0, curvePatch.size());
 		}
 	}
 	glBindVertexArray(0);
+
+	_cube->draw();
 	glUseProgram(0);
 }
 // --------------------------------------------------
