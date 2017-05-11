@@ -8,7 +8,29 @@ uniform mat4 projview_matrix;
 
 void main()
 {
+	//Draw axes
 	float size = 2;
+
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(size, 0, 0, 0.0));
+	EmitVertex();
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(-size, 0, 0, 0.0));
+	EmitVertex();
+	EndPrimitive();
+
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(0, 0, size, 0.0));
+	EmitVertex();
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(0, 0, -size, 0.0));
+	EmitVertex();
+	EndPrimitive();
+
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(0, size, 0, 0.0));
+	EmitVertex();
+	gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(0, 0, 0, 0.0) + vec4(0, -size, 0, 0.0));
+	EmitVertex();
+	EndPrimitive();
+
+	//Draw grid
+	/*
 	float spacing = size / 10;
 	for(int i = -10; i <= 10; i++)
 	{
@@ -23,6 +45,6 @@ void main()
 		gl_Position = projview_matrix*(gl_in[0].gl_Position + vec4(spacing * i, 0, 0, 0.0) + vec4(0, 0, -size, 0.0));
 		EmitVertex();
 		EndPrimitive();
-	}
+	}*/
 
 }

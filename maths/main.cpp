@@ -344,6 +344,7 @@ void Initialize()
 	glBindVertexArray(0);
 
 	_cube->initialize(uniforms.basic.position);
+
 }
 
 void LoadShaders()
@@ -494,6 +495,7 @@ void Render()
 	glBindVertexArray(0);
 
 	_cube->draw();
+
 	glUseProgram(0);
 }
 // --------------------------------------------------
