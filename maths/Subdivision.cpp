@@ -25,6 +25,31 @@ void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int
 	}
 }
 
+void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int iteration)
+{
+	for (int iter = 0; iter < iteration; iter++)
+	{
+		std::vector<float> newVertex;
+		std::vector<int> newFaces;
+
+		/*for (int iVertex = 0; iVertex < vertex.size() - 2; iVertex ++)
+		{
+			std::vector<glm::vec3> vertexFace = getVertexInFaces(vertex, faces, iFace);
+			glm::vec3 vertexCenter = (vertexFace[0] + vertexFace[1] + vertexFace[2]) / 3.0f;
+
+			std::vector<int> adjFaces = getAdjacentFaces(faces, iFace);
+			std::vector<glm::vec3> adjCenter;
+			for (int i = 0; i < adjFaces.size(); i++)
+			{
+				std::vector<glm::vec3> vertexAdjFace = getVertexInFaces(vertex, faces, adjFaces[i]);
+				glm::vec3 vertexCenterAdj = (vertexAdjFace[0] + vertexAdjFace[1] + vertexAdjFace[2]) / 3.0f;
+
+				adjCenter.push_back(vertexCenterAdj);
+			}
+		}*/
+	}
+}
+
 std::vector<glm::vec3> getVertexInFaces(std::vector<float> vertex, std::vector<int> faces, int idFace)
 {
 	std::vector<glm::vec3> vertexFace;

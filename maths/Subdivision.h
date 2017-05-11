@@ -7,6 +7,7 @@
 #include <vector>
 
 void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
+void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
 
 
 std::vector<glm::vec3> getVertexInFaces(std::vector<float> vertex, std::vector<int> faces, int idFace);

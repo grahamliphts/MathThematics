@@ -61,6 +61,7 @@ bool _showPointChaikin = true;
 
 //Parameters for Coons
 ImVec4 _coonsColor = ImColor(4, 33, 144);
+bool _showPointCoons = true;
 
 //Parameters for Subdivision
 int _iterationsSubdivision = 1;
@@ -391,8 +392,9 @@ void Render()
 					curvePatch.push_back(_coonsPatch[i][j]);
 				}
 				MajBuffer(_vertexBufferCoons, curvePatch);
+				if (_showPointCoons)
+					glDrawArrays(GL_POINTS, 0, curvePatch.size());
 				glDrawArrays(GL_LINE_STRIP, 0, curvePatch.size());
-				glDrawArrays(GL_POINTS, 0, curvePatch.size());
 			}
 		}
 		glBindVertexArray(0);
@@ -427,10 +429,6 @@ void CallbackMousePos(GLFWwindow *window, int button, int action, int mods)
 {
 	double x, y;
 	glfwGetCursorPos(window, &x, &y);
-	if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS && ImGui::IsMouseHoveringAnyWindow() == 0)
-	{
-		std::cout << "Button mouse left press" << std::endl;
-	}
 	if (button == GLFW_MOUSE_BUTTON_RIGHT)
 	{
 		if (action == GLFW_RELEASE)
@@ -672,7 +670,6 @@ void DrawUI()
 					_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
 			}
 
-			std::cout << _originalCurves[_current_curve - 1][_current_point - 1].x << std::endl;
 			int xyzPoint[4] = { _originalCurves[_current_curve - 1][_current_point - 1].x, _originalCurves[_current_curve - 1][_current_point - 1].y, _originalCurves[_current_curve - 1][_current_point - 1].z, 255 };
 			if (ImGui::SliderInt3("X Y Z", xyzPoint, -10, 10))
 			{
@@ -720,6 +717,7 @@ void DrawUI()
 
 			ImGui::Text("Parameters for coons");
 			ImGui::ColorEdit3("Coons color", (float*)&_coonsColor);
+			ImGui::Checkbox("Show Points Coons", &_showPointCoons);
 		}
 	}
 	else
