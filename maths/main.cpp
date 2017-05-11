@@ -23,6 +23,7 @@
 #pragma region Include Files
 #include "Camera.h"
 #include "ChaikinConnsFunctions.h"
+#include "Cube.h"
 #pragma endregion
 // --------------------------------------------------
 
@@ -33,11 +34,14 @@ using namespace glm;
 // --------------------------------------------------
 #pragma region Variables Globales
 Camera *_cam;
+Cube *_cube;
 GLint _gridProgram, _basicProgram, _basicColorProgram;
 int _width = 1500;
 int _height = 800;
 
 float _fragmentColor[4];
+
+int _mode = 0;
 
 //Parameters for Original Curves
 ImVec4 _originalCurveColor = ImColor(172, 255, 143);
@@ -52,11 +56,15 @@ int _current_point = 1;
 ImVec4 _chaikinCurveColor = ImColor(114, 0, 6);
 float _lowerRatio = 0.25f;
 float _highRatio = 0.75f;
-int _iterations = 2;
+int _iterationsChaikin = 2;
 bool _showPointChaikin = true;
 
 //Parameters for Coons
 ImVec4 _coonsColor = ImColor(4, 33, 144);
+
+//Parameters for Subdivision
+int _iterationsSubdivision = 1;
+ImVec4 _cubeColor = ImColor(90, 33, 144);
 
 GLuint _vaoChaikinCurves, _vaoOriginalCurves, _vaoCoons;
 GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves, _vertexBufferCoons, _vertexBufferOriginalCurvesColor;
@@ -73,7 +81,6 @@ std::vector<std::vector<Color>> _colors;
 
 std::vector<std::vector<glm::vec3>> _coonsPatch;
 #pragma endregion
-
 #pragma region Structures
 struct
 {
@@ -99,7 +106,6 @@ struct
 #pragma endregion
 // --------------------------------------------------
 
-
 // --------------------------------------------------
 // PROTOTYPES
 // --------------------------------------------------
@@ -114,6 +120,7 @@ void CallbackMouseMove(GLFWwindow *window, double x, double y);
 void CallbackKeyboard(GLFWwindow* window, int key, int scancode, int action, int mods);
 
 void CreateControlCurves();
+void DrawUI();
 
 template<typename T>
 void MajBuffer(int vertexBuffer, std::vector<T> &vecteur);
@@ -127,7 +134,7 @@ void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, i
 // --------------------------------------------------
 int main(int argc, char** argv)
 {
-	_cam = new Camera();
+	
 
     // Setup window
     glfwSetErrorCallback(ErrorCallback);
@@ -151,122 +158,13 @@ int main(int argc, char** argv)
 	LoadShaders();
 	Initialize();
 
-    bool show_test_window = false;
 
     // Main loop
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-        ImGui_ImplGlfwGL3_NewFrame();
-
-		ImGui::Begin("Chaikin Curve / Coons / Subdivision");
-		ImGui::Text("Parameters for Curves");
-		ImGui::ColorEdit3("Original curve color", (float*)&_originalCurveColor);
-		ImGui::SliderInt("Number Points", &_nbPoints, 3, 20);
-		ImGui::SliderInt("Limits XY", &_limitsXZ, 1, 20);
-		ImGui::SliderInt("Limit Z (+/-)", &_limitsY, 1, 10);
-
-		if (ImGui::Button("Create New Curves"))
-		{
-			CreateControlCurves();
-			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-			_coonsPatch = CoonsPatch(_chaikinCurves);
-		}
-
-		if (_originalCurves.size() > 0)
-		{
-			if (ImGui::InputInt("Current curve", &_current_curve, 1))
-			{
-				_current_curve = _current_curve < 1 ? 1 : _current_curve;
-				_current_curve = _current_curve > 4 ? 4 : _current_curve;
-			}
-			if (ImGui::InputInt("Current point", &_current_point, 1))
-			{
-				_current_point = _current_point < 1 ? 1 : _current_point;
-				if (_originalCurves.size() > 0)
-					_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
-			}
-
-			std::cout << _originalCurves[_current_curve - 1][_current_point - 1].x << std::endl;
-			int xyzPoint[4] = { _originalCurves[_current_curve - 1][_current_point - 1].x, _originalCurves[_current_curve - 1][_current_point - 1].y, _originalCurves[_current_curve - 1][_current_point - 1].z, 255 };
-			if (ImGui::SliderInt3("X Y Z", xyzPoint, -10, 10))
-			{
-				_originalCurves[_current_curve - 1][_current_point - 1].x = xyzPoint[0];
-				_originalCurves[_current_curve - 1][_current_point - 1].y = xyzPoint[1];
-				_originalCurves[_current_curve - 1][_current_point - 1].z = xyzPoint[2];
-
-				int curveAdj = -1, pointAdj = -1;
-				GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
-				if (curveAdj != -1 && pointAdj != -1)
-				{
-					_originalCurves[curveAdj][pointAdj].x = xyzPoint[0];
-					_originalCurves[curveAdj][pointAdj].y = xyzPoint[1];
-					_originalCurves[curveAdj][pointAdj].z = xyzPoint[2];
-				}
-
-				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-				_coonsPatch = CoonsPatch(_chaikinCurves);
-			}
-
-			ImGui::Spacing();
-			ImGui::Separator();
-
-			ImGui::Text("Parameters for chaikin curve");
-			ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
-			if (ImGui::SliderInt("Iteration for chaikin curve", &_iterations, 1, 5))
-			{
-				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-				_coonsPatch = CoonsPatch(_chaikinCurves);
-			}
-			if (ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f))
-			{
-				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-				_coonsPatch = CoonsPatch(_chaikinCurves);
-			}
-			ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
-
-			if (ImGui::Button("Update") && _originalCurves.size() != 0)
-			{
-				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterations, _lowerRatio, _highRatio);
-				_coonsPatch = CoonsPatch(_chaikinCurves);
-			}
-		}
-		
-
-		ImGui::Spacing();
-		ImGui::Separator();
-
-		ImGui::Text("Parameters for coons");
-		ImGui::ColorEdit3("Coons color", (float*)&_coonsColor);
-
-		//if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
-		//	_coonsPatch = CoonsPatch(_chaikinCurves);
-
-		//ImGui::Spacing();
-		//ImGui::Separator();
-
-        if (ImGui::Button("Test Window")) 
-			show_test_window ^= 1;
-
-		ImGui::End();
-
-		static bool p_open = true;
-		ImGui::SetNextWindowPos(ImVec2(10, 10));
-		if (!ImGui::Begin("Example: Fixed Overlay", &p_open, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
-		{
-			ImGui::End();
-			return 0;
-		}
-		ImGui::Text("FPS Counter");
-		ImGui::Separator();
-		ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
-		ImGui::End();
-
-        if (show_test_window)
-        {
-            ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
-            ImGui::ShowTestWindow(&show_test_window);
-        }
+        
+		DrawUI();
 
 		_cam->updatePos();
 
@@ -338,6 +236,13 @@ void Initialize()
 	glVertexAttribPointer(uniforms.basic.position, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
 	glBindVertexArray(0);
+
+	/*Create Camera*/
+	_cam = new Camera();
+
+	/*Create Cube*/
+	_cube = new Cube();
+	_cube->initialize(uniforms.basic.position);
 }
 
 void LoadShaders()
@@ -396,97 +301,113 @@ void Render()
 	glm::mat4 proj_view = proj * view;
 	glm::mat4 model_mat;
 
-	//Draw grid
+	//Draw axes
 	glUseProgram(_gridProgram);
 	glUniformMatrix4fv(uniforms.grid.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glDrawArrays(GL_POINTS, 0, 1);
 
 
-	//Draw original curves
-	glUseProgram(_basicColorProgram);
-	glUniformMatrix4fv(uniforms.basicColor.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-	glUniformMatrix4fv(uniforms.basicColor.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-
-	glBindVertexArray(_vaoOriginalCurves);
-	if (_originalCurves.size() > 0)
+	if (_mode == 0)
 	{
-		int curveAdj = -1, pointAdj = -1;
-		GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
-		for (int i = 0; i < _colors.size(); i++)
+		//Draw original curves
+		glUseProgram(_basicColorProgram);
+		glUniformMatrix4fv(uniforms.basicColor.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+		glUniformMatrix4fv(uniforms.basicColor.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
+		glBindVertexArray(_vaoOriginalCurves);
+		if (_originalCurves.size() > 0)
 		{
-			for (int j = 0; j < _colors[i].size(); j++)
+			int curveAdj = -1, pointAdj = -1;
+			GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
+			for (int i = 0; i < _colors.size(); i++)
 			{
-				if ((i == _current_curve - 1 && j == _current_point - 1) || (i == curveAdj && j == pointAdj))
+				for (int j = 0; j < _colors[i].size(); j++)
 				{
-					_colors[i][j].r = 1.0f;
-					_colors[i][j].b = 0.0f;
-					_colors[i][j].g = 0.0f;
-				}
-				else
-				{
-					_colors[i][j].r = 0.0f;
-					_colors[i][j].b = 0.0f;
-					_colors[i][j].g = 0.0f;
+					if ((i == _current_curve - 1 && j == _current_point - 1) || (i == curveAdj && j == pointAdj))
+					{
+						_colors[i][j].r = 1.0f;
+						_colors[i][j].b = 0.0f;
+						_colors[i][j].g = 0.0f;
+					}
+					else
+					{
+						_colors[i][j].r = 0.0f;
+						_colors[i][j].b = 0.0f;
+						_colors[i][j].g = 0.0f;
+					}
 				}
 			}
-		}
 
-		for (int i = 0; i < 4; i++)
-		{
-			
-			MajBuffer(_vertexBufferOriginalCurvesColor, _colors[i]);
-			MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
-			glDrawArrays(GL_POINTS, 0, _originalCurves[i].size());
-			glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
-		}
-	}
-	glBindVertexArray(0);
-	glUseProgram(0);
-
-	//Draw Chaikin curves
-	glUseProgram(_basicProgram);
-	glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-	glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-
-	glBindVertexArray(_vaoChaikinCurves);
-	if (_chaikinCurves.size() > 0)
-	{
-		SetColorToFragment(_chaikinCurveColor);
-		for (int i = 0; i < 4; i++)
-		{
-			MajBuffer(_vertexBufferChaikinCurves, _chaikinCurves[i]);
-			if (_showPointChaikin)
-				glDrawArrays(GL_POINTS, 0, _chaikinCurves[i].size());
-			glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves[i].size());
-		}
-	}
-	glBindVertexArray(0);
-
-	//Draw Chaikin coons
-	glBindVertexArray(_vaoCoons);
-	if (_chaikinCurves.size() == 4 && _coonsPatch.size() > 0)
-	{
-		SetColorToFragment(_coonsColor);
-		for (int i = 0; i < _chaikinCurves[0].size(); i++)
-		{
-			MajBuffer(_vertexBufferCoons, _coonsPatch[i]);
-			glDrawArrays(GL_LINE_STRIP, 0, _coonsPatch[i].size());
-		}
-		
-		for (int j = 0; j < _coonsPatch.size(); j++)
-		{
-			std::vector<glm::vec3> curvePatch;
-			for (int i = 0; i < _coonsPatch.size(); i++)
+			for (int i = 0; i < 4; i++)
 			{
-				curvePatch.push_back(_coonsPatch[i][j]);
+
+				MajBuffer(_vertexBufferOriginalCurvesColor, _colors[i]);
+				MajBuffer(_vertexBufferOriginalCurves, _originalCurves[i]);
+				glDrawArrays(GL_POINTS, 0, _originalCurves[i].size());
+				glDrawArrays(GL_LINE_STRIP, 0, _originalCurves[i].size());
 			}
-			MajBuffer(_vertexBufferCoons, curvePatch);
-			glDrawArrays(GL_LINE_STRIP, 0, curvePatch.size());
 		}
+		glBindVertexArray(0);
+		glUseProgram(0);
+
+		//Draw Chaikin curves
+		glUseProgram(_basicProgram);
+		glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+		glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
+		glBindVertexArray(_vaoChaikinCurves);
+		if (_chaikinCurves.size() > 0)
+		{
+			SetColorToFragment(_chaikinCurveColor);
+			for (int i = 0; i < 4; i++)
+			{
+				MajBuffer(_vertexBufferChaikinCurves, _chaikinCurves[i]);
+				if (_showPointChaikin)
+					glDrawArrays(GL_POINTS, 0, _chaikinCurves[i].size());
+				glDrawArrays(GL_LINE_STRIP, 0, _chaikinCurves[i].size());
+			}
+		}
+		glBindVertexArray(0);
+
+		//Draw Chaikin coons
+		glBindVertexArray(_vaoCoons);
+		if (_chaikinCurves.size() == 4 && _coonsPatch.size() > 0)
+		{
+			SetColorToFragment(_coonsColor);
+			for (int i = 0; i < _chaikinCurves[0].size(); i++)
+			{
+				MajBuffer(_vertexBufferCoons, _coonsPatch[i]);
+				glDrawArrays(GL_LINE_STRIP, 0, _coonsPatch[i].size());
+			}
+
+			for (int j = 0; j < _coonsPatch.size(); j++)
+			{
+				std::vector<glm::vec3> curvePatch;
+				for (int i = 0; i < _coonsPatch.size(); i++)
+				{
+					curvePatch.push_back(_coonsPatch[i][j]);
+				}
+				MajBuffer(_vertexBufferCoons, curvePatch);
+				glDrawArrays(GL_LINE_STRIP, 0, curvePatch.size());
+				glDrawArrays(GL_POINTS, 0, curvePatch.size());
+			}
+		}
+		glBindVertexArray(0);
+		glUseProgram(0);
+
 	}
-	glBindVertexArray(0);
-	glUseProgram(0);
+	else
+	{
+		glUseProgram(_basicProgram);
+		glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+		glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+
+		SetColorToFragment(_cubeColor);
+		_cube->draw();
+		glUseProgram(0);
+	}
 }
+
 // --------------------------------------------------
 
 
@@ -708,4 +629,129 @@ void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, i
 		curveAdj = 0;
 		pointAdj = _colors[0].size() - 1;
 	}
+}
+
+void DrawUI()
+{
+	ImGui_ImplGlfwGL3_NewFrame();
+
+	ImGui::Begin("Chaikin Curve / Coons / Subdivision");
+
+	ImGui::RadioButton("Mode coons", &_mode, 0); ImGui::SameLine();
+	ImGui::RadioButton("Mode subdivision", &_mode, 1);
+
+	if (_mode == 0)
+	{
+		ImGui::Text("Parameters for Curves");
+		ImGui::ColorEdit3("Original curve color", (float*)&_originalCurveColor);
+		ImGui::SliderInt("Number Points", &_nbPoints, 3, 20);
+		ImGui::SliderInt("Limits XY", &_limitsXZ, 1, 20);
+		ImGui::SliderInt("Limit Z (+/-)", &_limitsY, 1, 10);
+
+		if (ImGui::Button("Create New Curves"))
+		{
+			CreateControlCurves();
+			_chaikinCurves = GetChaikinCurves(_originalCurves, _iterationsChaikin, _lowerRatio, _highRatio);
+			_coonsPatch = CoonsPatch(_chaikinCurves);
+		}
+
+		if (_originalCurves.size() > 0)
+		{
+			if (ImGui::InputInt("Current curve", &_current_curve, 1))
+			{
+				_current_curve = _current_curve < 1 ? 1 : _current_curve;
+				_current_curve = _current_curve > 4 ? 4 : _current_curve;
+			}
+			if (ImGui::InputInt("Current point", &_current_point, 1))
+			{
+				_current_point = _current_point < 1 ? 1 : _current_point;
+				if (_originalCurves.size() > 0)
+					_current_point = _current_point > _originalCurves[0].size() ? _originalCurves[0].size() : _current_point;
+			}
+
+			std::cout << _originalCurves[_current_curve - 1][_current_point - 1].x << std::endl;
+			int xyzPoint[4] = { _originalCurves[_current_curve - 1][_current_point - 1].x, _originalCurves[_current_curve - 1][_current_point - 1].y, _originalCurves[_current_curve - 1][_current_point - 1].z, 255 };
+			if (ImGui::SliderInt3("X Y Z", xyzPoint, -10, 10))
+			{
+				_originalCurves[_current_curve - 1][_current_point - 1].x = xyzPoint[0];
+				_originalCurves[_current_curve - 1][_current_point - 1].y = xyzPoint[1];
+				_originalCurves[_current_curve - 1][_current_point - 1].z = xyzPoint[2];
+
+				int curveAdj = -1, pointAdj = -1;
+				GetCurveAndPointsAdj(_current_curve - 1, _current_point - 1, curveAdj, pointAdj);
+				if (curveAdj != -1 && pointAdj != -1)
+				{
+					_originalCurves[curveAdj][pointAdj].x = xyzPoint[0];
+					_originalCurves[curveAdj][pointAdj].y = xyzPoint[1];
+					_originalCurves[curveAdj][pointAdj].z = xyzPoint[2];
+				}
+
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterationsChaikin, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::Text("Parameters for chaikin curve");
+			ImGui::ColorEdit3("Chaikin curve color", (float*)&_chaikinCurveColor);
+			if (ImGui::SliderInt("Iteration for chaikin curve", &_iterationsChaikin, 1, 5))
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterationsChaikin, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+			if (ImGui::DragFloatRange2("Ratio Corner Cutting", &_lowerRatio, &_highRatio, 0.001f, 0.1f, 0.9f))
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterationsChaikin, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+			ImGui::Checkbox("Show Points Chaikin", &_showPointChaikin);
+
+			if (ImGui::Button("Update") && _originalCurves.size() != 0)
+			{
+				_chaikinCurves = GetChaikinCurves(_originalCurves, _iterationsChaikin, _lowerRatio, _highRatio);
+				_coonsPatch = CoonsPatch(_chaikinCurves);
+			}
+			ImGui::Spacing();
+			ImGui::Separator();
+
+			ImGui::Text("Parameters for coons");
+			ImGui::ColorEdit3("Coons color", (float*)&_coonsColor);
+
+		}
+		
+	}
+	else
+	{
+		ImGui::Text("Parameters for subdivision");
+
+		if (ImGui::Button("Subdivide"))
+		{
+
+		}
+		if (ImGui::SliderInt("Iteration for subdivision", &_iterationsSubdivision, 1, 5))
+		{
+		}
+		ImGui::ColorEdit3("Cube color", (float*)&_cubeColor);
+	}
+	//if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
+	//	_coonsPatch = CoonsPatch(_chaikinCurves);
+
+	ImGui::End();
+
+	static bool p_open = true;
+	ImGui::SetNextWindowPos(ImVec2(10, 10));
+	if (!ImGui::Begin("Example: Fixed Overlay", &p_open, ImVec2(0, 0), 0.3f, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoSavedSettings))
+	{
+		ImGui::End();
+		return;
+	}
+	ImGui::Text("FPS Counter");
+	ImGui::Separator();
+	ImGui::Text("%.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);
+	ImGui::End();
+
+	ImGui::SetNextWindowPos(ImVec2(650, 20), ImGuiSetCond_FirstUseEver);
+	bool show_test_window = true;
+	ImGui::ShowTestWindow(&show_test_window);
 }
