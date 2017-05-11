@@ -11,6 +11,9 @@
 
 void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
 
-std::vector<glm::vec3> getVertexInFaces(std::vector<float> vertex, std::vector<int> faces, int idFace);
-std::vector<int> getAdjacentFaces(std::vector<int> faces, int idFace);
+std::vector<float> GetPertubedVertexKobbelt(std::vector<float> vertex, std::vector<int> faces);
+std::vector<int> GetIdVertexInFaces(std::vector<int> faces, int idFace);
+std::vector<glm::vec3> GetVertexInFaces(std::vector<float> vertex, std::vector<int> faces, int idFace);
+std::vector<int> GetAdjacentFaces(std::vector<int> faces, int idFace);
+std::vector<int> GetAdjacentVertex(std::vector<int> faces, int idFace, int idVertex);
 float Perturbation(int n);
