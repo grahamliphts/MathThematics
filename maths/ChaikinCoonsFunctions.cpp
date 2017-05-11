@@ -65,6 +65,10 @@ std::vector<std::vector<glm::vec3>> CoonsPatch(std::vector<std::vector<glm::vec3
 				x = controlPoints[0][i].x;
 				z = controlPoints[2][j].z;
 
+				//x = controlPoints[0][i].x + (controlPoints[1][i].x - controlPoints[0][i].x) * (i * 1.0f / nbPoints);
+				//z = controlPoints[2][j].z + (controlPoints[3][j].z - controlPoints[2][j].z) * (j * 1.0f / nbPoints);
+
+
 				float y1, y2, yb;
 
 				y1 = (1 - (j * 1.0f / nbPoints)) * controlPoints[0][i].y + (j * 1.0f / nbPoints) * controlPoints[1][i].y;
