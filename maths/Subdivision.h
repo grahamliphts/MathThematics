@@ -10,6 +10,9 @@
 
 
 void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
+void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
+
+void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int iteration);
 
 std::vector<float> GetPertubedVertexKobbelt(std::vector<float> vertex, std::vector<int> faces);
 std::vector<int> GetIdVertexInFaces(std::vector<int> faces, int idFace);
