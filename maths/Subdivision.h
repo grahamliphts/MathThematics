@@ -20,8 +20,14 @@ std::vector<glm::vec3> GetVertexInFaces(std::vector<float> vertex, std::vector<i
 std::vector<int> GetAdjacentFaces(std::vector<int> faces, int idFace);
 std::vector<int> GetAdjacentVertex(std::vector<int> faces, int idFace, int idVertex);
 float Perturbation(int n);
-float Alpha(int n);
 
 std::vector<int> GetFacesFromVertex(std::vector<int> faces, int idVertex, int faceIgnore);
 bool FaceExists(std::vector<int> faces, std::vector<int> faceToFind);
 
+std::vector<int> GetFacesFromEdges(std::vector<int> faces, std::vector<int> idVertex);
+
+std::vector<std::vector<int>> CountEdge(std::vector<int> faces);
+int GetEdgeId(std::vector<std::vector<int>> edges, std::vector<int> edge);
+
+std::vector<float> GetPertubedVertexLoop(std::vector<float> vertex, std::vector<int> faces);
+float AlphaLoop(int n);
