@@ -725,12 +725,32 @@ void DrawUI()
 	{
 		ImGui::Text("Parameters for subdivision");
 
-		if (ImGui::Button("Subdivide"))
+		if (ImGui::Button("Subdivide Kobbelt"))
 		{
+			_cube->savePrevious();
 			SubdivisionKobbelt(_cube->verts, _cube->faces, _iterationsSubdivision);
 			_cube->initialize(uniforms.basic.position);
-			_cube->draw();
+		} 
+		ImGui::SameLine();
+		if (ImGui::Button("Subdivide Loop"))
+		{
+			_cube->savePrevious();
+			SubdivisionLoop(_cube->verts, _cube->faces, _iterationsSubdivision);
+			_cube->initialize(uniforms.basic.position);
 		}
+
+		if (ImGui::Button("Undo"))
+		{
+			_cube->restorePrevious();
+			_cube->initialize(uniforms.basic.position);
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Reset"))
+		{
+			_cube->reset();
+			_cube->initialize(uniforms.basic.position);
+		}
+
 		if (ImGui::SliderInt("Iteration for subdivision", &_iterationsSubdivision, 1, 5));
 		ImGui::ColorEdit3("Cube color", (float*)&_cubeColor);
 	}

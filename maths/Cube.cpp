@@ -7,7 +7,7 @@ Cube::~Cube()
 	glDeleteBuffers(1, &indices);
 }
 
-void Cube::draw() const
+void Cube::draw() 
 {
 	glBindVertexArray(vao);
 	//glDrawArrays(GL_POINTS, 0, faces.size());
@@ -15,6 +15,24 @@ void Cube::draw() const
 	glDrawElements(GL_TRIANGLES, faces.size(), GL_UNSIGNED_INT, 0);
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glBindVertexArray(0);
+}
+
+void Cube::reset() 
+{
+	verts = originalVerts;
+	faces = originalfaces;
+}
+
+void Cube::savePrevious()
+{
+	previousVerts = verts;
+	previousFaces = faces;
+}
+
+void Cube::restorePrevious()
+{
+	verts = previousVerts;
+	faces = previousFaces;
 }
 
 void Cube::initialize(int uPosition)
