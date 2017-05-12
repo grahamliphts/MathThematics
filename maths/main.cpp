@@ -23,6 +23,7 @@
 #pragma region Include Files
 #include "Camera.h"
 #include "ChaikinConnsFunctions.h"
+#include "Subdivision.h"
 #include "Cube.h"
 #pragma endregion
 // --------------------------------------------------
@@ -726,11 +727,11 @@ void DrawUI()
 
 		if (ImGui::Button("Subdivide"))
 		{
-
+			SubdivisionKobbelt(_cube->verts, _cube->faces, _iterationsSubdivision);
+			_cube->initialize(uniforms.basic.position);
+			_cube->draw();
 		}
-		if (ImGui::SliderInt("Iteration for subdivision", &_iterationsSubdivision, 1, 5))
-		{
-		}
+		if (ImGui::SliderInt("Iteration for subdivision", &_iterationsSubdivision, 1, 5));
 		ImGui::ColorEdit3("Cube color", (float*)&_cubeColor);
 	}
 	//if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
