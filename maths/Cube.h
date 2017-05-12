@@ -1,6 +1,7 @@
 #pragma once
 #include <GL/gl3w.h>
 #include <vector>
+#include <glm\glm.hpp>
 
 class Cube
 {
@@ -63,12 +64,42 @@ public:
 		2.0, -2.0,  2.0,
 		2.0,  2.0,  2.0,
 		-2.0,  2.0,  2.0,
+
 		// back
 		-2.0, -2.0, -2.0,
 		2.0, -2.0, -2.0,
 		2.0,  2.0, -2.0,
 		-2.0,  2.0, -2.0
 	};
+
+	/*std::vector<float> verts =
+	{
+		// front
+		-2.0, -2.0,  2.0,
+		-1.0, 0.0, 0.0, 
+
+		2.0, -2.0,  2.0,
+		0.0, -1.0, 0.0,
+
+		2.0,  2.0,  2.0,
+		0.0, 0.0, 1.0,
+
+		-2.0,  2.0,  2.0,
+		0.0, 1.0, 0.0,
+
+		// back
+		-2.0, -2.0, -2.0,
+		-1.0, 0.0, 0.0,
+
+		2.0, -2.0, -2.0,
+		1.0, 0.0, 0.0,
+
+		2.0,  2.0, -2.0,
+		1.0, 0.0, 0.0,
+
+		-2.0,  2.0, -2.0,
+		0.0, 0.0, -1.0
+	};*/
 
 	std::vector<float> verts =
 	{
@@ -81,7 +112,7 @@ public:
 		-2.0, -2.0, -2.0,
 		2.0, -2.0, -2.0,
 		2.0,  2.0, -2.0,
-		-2.0,  2.0, -2.0
+		-2.0,  2.0, -2.0,
 	};
 
 	std::vector<float> previousVerts;
@@ -89,9 +120,13 @@ public:
 
 	void restorePrevious();
 	void savePrevious();
-	void draw();
+	void draw(bool wireframe);
 	void reset();
-	void initialize(int uPosition);
+	void initialize(int uPosition, int uNormal);
+	
+	glm::vec3 getNormalFromId(int id, std::vector<glm::vec4> faceNormals);
+	std::vector<float> computeNormals();
+
 };
 
 // ? extern const GLuint PositionSlot;

@@ -36,7 +36,8 @@ using namespace glm;
 #pragma region Variables Globales
 Camera *_cam;
 Cube *_cube;
-GLint _gridProgram, _basicProgram, _basicColorProgram;
+GLint _gridProgram, _basicProgram, _basicColorProgram, _renderProgram;
+
 int _width = 1500;
 int _height = 800;
 
@@ -65,8 +66,8 @@ ImVec4 _coonsColor = ImColor(4, 33, 144);
 bool _showPointCoons = true;
 
 //Parameters for Subdivision
+bool _wireframe = true;
 int _iterationsSubdivision = 1;
-ImVec4 _cubeColor = ImColor(90, 33, 144);
 
 GLuint _vaoChaikinCurves, _vaoOriginalCurves, _vaoCoons;
 GLuint _vertexBufferChaikinCurves, _vertexBufferOriginalCurves, _vertexBufferCoons, _vertexBufferOriginalCurvesColor;
@@ -104,6 +105,15 @@ struct
 	{
 		int     projview_matrix;
 	} grid;
+	struct
+	{
+		int           model_matrix;
+		int           projview_matrix;
+		int           light_direction;
+		int           cam_position;
+		int			  position;
+		int			  normal;
+	} render;
 } uniforms;
 #pragma endregion
 // --------------------------------------------------
@@ -136,8 +146,6 @@ void GetCurveAndPointsAdj(int current_curve, int current_point, int &curveAdj, i
 // --------------------------------------------------
 int main(int argc, char** argv)
 {
-	
-
     // Setup window
     glfwSetErrorCallback(ErrorCallback);
     if (!glfwInit())
@@ -244,18 +252,24 @@ void Initialize()
 
 	/*Create Cube*/
 	_cube = new Cube();
-	_cube->initialize(uniforms.basic.position);
+	_cube->initialize(uniforms.render.position, uniforms.render.normal);
 }
 
 void LoadShaders()
 {
-	EsgiShader gridShader, basicShader, basicColorShader;
+	EsgiShader gridShader, basicShader, renderShader, basicColorShader;
 
 	printf("Load basic fs\n");
 	basicShader.LoadFragmentShader("shaders/basic.frag");
 	printf("Load basic vs\n");
 	basicShader.LoadVertexShader("shaders/basic.vert");
 	basicShader.Create();
+
+	printf("Load render fs\n");
+	renderShader.LoadFragmentShader("shaders/render.frag");
+	printf("Load render vs\n");
+	renderShader.LoadVertexShader("shaders/render.vert");
+	renderShader.Create();
 
 	printf("Load basic color fs\n");
 	basicColorShader.LoadFragmentShader("shaders/basicColor.frag");
@@ -273,6 +287,7 @@ void LoadShaders()
 
 	_gridProgram = gridShader.GetProgram();
 	_basicProgram = basicShader.GetProgram();
+	_renderProgram = renderShader.GetProgram();
 	_basicColorProgram = basicColorShader.GetProgram();
 
 	uniforms.grid.projview_matrix = glGetUniformLocation(_gridProgram, "projview_matrix");
@@ -281,6 +296,11 @@ void LoadShaders()
 	uniforms.basic.model_matrix = glGetUniformLocation(_basicProgram, "model_matrix");
 	uniforms.basic.position = glGetAttribLocation(_basicProgram, "a_position");
 	uniforms.basic.color = glGetUniformLocation(_basicProgram, "fragmentColor");
+
+	uniforms.render.projview_matrix = glGetUniformLocation(_renderProgram, "projview_matrix");
+	uniforms.render.model_matrix = glGetUniformLocation(_renderProgram, "model_matrix");
+	uniforms.render.position = glGetAttribLocation(_renderProgram, "a_position");
+	uniforms.render.normal = glGetAttribLocation(_renderProgram, "a_normal");
 
 	uniforms.basicColor.projview_matrix = glGetUniformLocation(_basicColorProgram, "projview_matrix");
 	uniforms.basicColor.model_matrix = glGetUniformLocation(_basicColorProgram, "model_matrix");
@@ -308,7 +328,6 @@ void Render()
 	glUniformMatrix4fv(uniforms.grid.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
 	glDrawArrays(GL_POINTS, 0, 1);
 
-
 	if (_mode == 0)
 	{
 		//Draw original curves
@@ -317,7 +336,6 @@ void Render()
 
 		model_mat = glm::translate(glm::vec3(-2.5, 0, -2.5));
 		glUniformMatrix4fv(uniforms.basicColor.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
-
 
 		glBindVertexArray(_vaoOriginalCurves);
 		if (_originalCurves.size() > 0)
@@ -404,12 +422,13 @@ void Render()
 	}
 	else
 	{
-		glUseProgram(_basicProgram);
-		glUniformMatrix4fv(uniforms.basic.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
-		glUniformMatrix4fv(uniforms.basic.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		glUseProgram(_renderProgram);
+		glUniformMatrix4fv(uniforms.render.projview_matrix, 1, GL_FALSE, (GLfloat*)&proj_view[0][0]);
+		glUniformMatrix4fv(uniforms.render.model_matrix, 1, GL_FALSE, (GLfloat*)&model_mat[0][0]);
+		//glUniformMatrix4fv(uniforms.render.cam_position, 1, GL_FALSE, (GLfloat*)&cam_pos[0]);
 
-		SetColorToFragment(_cubeColor);
-		_cube->draw();
+		//SetColorToFragment(_cubeColor);
+		_cube->draw(_wireframe);
 		glUseProgram(0);
 	}
 }
@@ -729,30 +748,30 @@ void DrawUI()
 		{
 			_cube->savePrevious();
 			SubdivisionKobbelt(_cube->verts, _cube->faces, _iterationsSubdivision);
-			_cube->initialize(uniforms.basic.position);
+			_cube->initialize(uniforms.render.position, uniforms.render.normal);
 		} 
 		ImGui::SameLine();
 		if (ImGui::Button("Subdivide Loop"))
 		{
 			_cube->savePrevious();
 			SubdivisionLoop(_cube->verts, _cube->faces, _iterationsSubdivision);
-			_cube->initialize(uniforms.basic.position);
+			_cube->initialize(uniforms.render.position, uniforms.render.normal);
 		}
 
 		if (ImGui::Button("Undo"))
 		{
 			_cube->restorePrevious();
-			_cube->initialize(uniforms.basic.position);
+			_cube->initialize(uniforms.render.position, uniforms.render.normal);
 		}
 		ImGui::SameLine();
 		if (ImGui::Button("Reset"))
 		{
 			_cube->reset();
-			_cube->initialize(uniforms.basic.position);
+			_cube->initialize(uniforms.render.position, uniforms.render.normal);
 		}
 
 		if (ImGui::SliderInt("Iteration for subdivision", &_iterationsSubdivision, 1, 5));
-		ImGui::ColorEdit3("Cube color", (float*)&_cubeColor);
+		ImGui::Checkbox("Wireframe ?", &_wireframe);
 	}
 	//if (ImGui::Button("Create Patch") && _chaikinCurves.size() == 4)
 	//	_coonsPatch = CoonsPatch(_chaikinCurves);
