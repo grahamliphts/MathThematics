@@ -54,7 +54,6 @@ void Cube::initialize(int uPosition, int uNormal)
 	glEnableVertexAttribArray(uNormal);
 	glVertexAttribPointer(uNormal, 3, GL_FLOAT, GL_FALSE, sizeof(float) * 6, (void*)(3 * sizeof(float)));
 
-
 	glGenBuffers(1, &indices);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indices);
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(unsigned int) * faces.size(), &faces[0], GL_STATIC_DRAW);
@@ -76,27 +75,20 @@ glm::vec3 Cube::getNormalFromId(int id, std::vector<glm::vec4> faceNormals)
 std::vector<float> Cube::computeNormals()
 {
 	std::vector<glm::vec4> facesNormals;
-
 	std::vector<float> newVerts;
 
 	for (int iFace = 0; iFace < faces.size() - 2; iFace += 3)
 	{
-		std::vector<int> idVertex;
-
 		std::vector<glm::vec3> vertexFace = GetVertexInFaces(verts, faces, iFace / 3);
 
 		glm::vec3 edge1 = vertexFace[2] - vertexFace[1];
 		glm::vec3 edge2 = vertexFace[0] - vertexFace[1];
 
-		std::cout << glm::cross(edge1, edge2).x << " " << glm::cross(edge1, edge2).y << " " << glm::cross(edge1, edge2).z << std::endl;
 		facesNormals.push_back(glm::vec4(glm::normalize(glm::cross(edge1, edge2)), iFace));
 	}
 	for (int iVert = 0; iVert < verts.size() - 2; iVert += 3)
 	{
-
 		glm::vec3 currentVertex = glm::vec3(verts[iVert], verts[iVert + 1], verts[iVert + 2]);
-		std::cout << currentVertex[0] << " " << currentVertex[1] << " " << currentVertex[2] << std::endl;
-
 		glm::vec3 currentNormal = glm::vec3(0, 0, 0);
 		std::vector<int> idFacesVertex = GetFacesFromVertex(faces, faces[iVert/3], -1);
 
