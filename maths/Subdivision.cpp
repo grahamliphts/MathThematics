@@ -304,7 +304,7 @@ void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int it
 				glm::vec3 somme(0, 0, 0);
 				for (int i = 0; i < adjFace.size(); i++)
 				{
-					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i]);
+					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i] * 3);
 					for (int j = 0; j < listVertex.size(); j++)
 					{
 						if (listVertex[j] == edge[0] || listVertex[j] == edge[1])
@@ -340,7 +340,7 @@ void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int it
 				glm::vec3 somme(0, 0, 0);
 				for (int i = 0; i < adjFace.size(); i++)
 				{
-					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i]);
+					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i] * 3);
 					for (int j = 0; j < listVertex.size(); j++)
 					{
 						if (listVertex[j] == edge[0] || listVertex[j] == edge[1])
@@ -376,7 +376,7 @@ void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int it
 				glm::vec3 somme(0, 0, 0);
 				for (int i = 0; i < adjFace.size(); i++)
 				{
-					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i]);
+					std::vector<int> listVertex = GetIdVertexInFaces(faces, adjFace[i] * 3);
 					for (int j = 0; j < listVertex.size(); j++)
 					{
 						if (listVertex[j] == edge[0] || listVertex[j] == edge[1])
@@ -437,17 +437,16 @@ void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int it
 			
 			newFaces.push_back(idVertex[0]);
 			newFaces.push_back(idVertex[1]);
-			newFaces.push_back(idVertex[5]);
+			newFaces.push_back(idVertex[4]);
 
 			newFaces.push_back(idVertex[1]);
 			newFaces.push_back(idVertex[2]);
-			newFaces.push_back(idVertex[4]);
+			newFaces.push_back(idVertex[5]);
 
 			newFaces.push_back(idVertex[0]);
 			newFaces.push_back(idVertex[2]);
 			newFaces.push_back(idVertex[3]);
 
-				break;
 		}
 
 		vertex = newAllVertex;
