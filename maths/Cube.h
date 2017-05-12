@@ -4,8 +4,22 @@
 
 class Cube
 {
-	std::vector<int> faces = 
+
+	GLuint vao; //vao
+	GLuint positions; //vbo positions
+	GLuint indices; //vbo indices
+
+public:
+	~Cube();
+
+	std::vector<int> faces =
 	{
+		/*
+		0, 1, 2,
+		1, 0, 3,
+		2, 3, 0,
+		3, 2, 1*/
+		
 		// front
 		0, 1, 2,
 		2, 3, 0,
@@ -23,29 +37,28 @@ class Cube
 		1, 0, 4,
 		// right
 		3, 2, 6,
-		6, 7, 3  
+		6, 7, 3
 	};
 
-	std::vector<float> verts = 
+	std::vector<float> verts =
 	{
+		/*
+		-2.0, 0.0,  0.0,
+		2.0, 0.0,  0.0,
+		0.0, 0.0,  2.0,
+		0.0, 2.0,  1.0*/
+
 		// front
-		-1.0, -1.0,  1.0, 
-		1.0, -1.0,  1.0,
-		1.0,  1.0,  1.0,
-		-1.0,  1.0,  1.0,
+		-2.0, -2.0,  2.0,
+		2.0, -2.0,  2.0,
+		2.0,  2.0,  2.0,
+		-2.0,  2.0,  2.0,
 		// back
-		-1.0, -1.0, -1.0,
-		1.0, -1.0, -1.0,
-		1.0,  1.0, -1.0,
-		-1.0,  1.0, -1.0 
+		-2.0, -2.0, -2.0,
+		2.0, -2.0, -2.0,
+		2.0,  2.0, -2.0,
+		-2.0,  2.0, -2.0
 	};
-
-	GLuint vao; //vao
-	GLuint positions; //vbo positions
-	GLuint indices; //vbo indices
-
-public:
-	~Cube();
 
 	void draw() const;
 	void initialize(int uPosition);
