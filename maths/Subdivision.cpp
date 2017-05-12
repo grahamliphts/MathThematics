@@ -264,28 +264,49 @@ void SubdivisionKobbelt(std::vector<float> &vertex, std::vector<int> &faces, int
 
 void SubdivisionLoop(std::vector<float> &vertex, std::vector<int> &faces, int iteration)
 {
-	/*for (int iter = 0; iter < iteration; iter++)
+	std::vector<int> vertexCenterAlreadyAdd;
+	std::vector<int> vertexAlreadyAdd;
+	std::vector<int> vertexCenterAlreadyid;
+
+	for (int iter = 0; iter < iteration; iter++)
 	{
 		std::vector<float> newVertex;
 		std::vector<int> newFaces;
 
+		for (int iFace = 0; iFace < faces.size() - 2; iFace += 3)
+		{
+			vertexCenterAlreadyAdd.push_back(-1);
+			vertexCenterAlreadyid.push_back(-1);
+		}
+		for (int iFace = 0; iFace < vertex.size() / 3; iFace++)
+			vertexAlreadyAdd.push_back(-1);
 
 		for (int iFace = 0; iFace < faces.size() - 2; iFace += 3)
 		{
+			std::vector<int> idVertex;
+
+			if (vertexCenterAlreadyAdd[iFace / 3] == -1)
+			{
+				std::vector<glm::vec3> vertexFace = GetVertexInFaces(vertex, faces, iFace / 3);
+				glm::vec3 vertex = vertexFace[0];
+
+				std::vector<int> adjacentVertex = GetAdjacentVertex(faces, iFace / 3, faces[iFace]);
+
+				glm::vec3 somme(0, 0, 0);
+				for (int iAdjVertex = 0; iAdjVertex < adjacentVertex.size(); iAdjVertex++)
+					somme += adjacentVertex[iAdjVertex];
+				//glm::vec3 newVertex = (1 - Alpha(adjacentVertex.size() * vertex)) + Alpha(adjacentVertex.size()) * somme;
+
+				//idVertex.push_back(newAllVertex.size() / 3);
+				//vertexCenterAlreadyAdd[iFace / 3] = iFace / 3;
+				//vertexCenterAlreadyid[iFace / 3] = newAllVertex.size() / 3;
+
+				//newAllVertex.push_back(newVertex.x);
+				//newAllVertex.push_back(newVertex.y);
+				//newAllVertex.push_back(newVertex.z);
+			}
 		}
-
-		for (int iVertex = 0; iVertex < vertex.size() - 2; iVertex +=3)
-		{
-			glm::vec3 currentVertex = glm::vec3(vertex[iVertex], vertex[iVertex +1], vertex[iVertex +2]);
-			getAdjacentVertex(currentVertex);
-
-
-			glm::vec3 somme(0, 0, 0);
-			for (int iAdjVertex = 0; iAdjVertex < adjVertex.size(); iAdjVertex++)
-				somme += adjVertex[iAdjVertex];
-			glm::vec3 newVertex = (1 - Alpha(adjVertex.size() * currentVertex)) + Alpha(adjVertex.size()) * somme;
-		}
-	}*/
+	}
 }
 
 std::vector<int> GetIdVertexInFaces(std::vector<int> faces, int idFace)
@@ -414,6 +435,8 @@ float Alpha(int n)
 		alpha = 3 / 16;
 	else if (n > 3)
 		alpha = 1 / n * (5 / 8 - pow((3 / 8 + 1 / 4 * cos(2 * M_PI / n)), 2));
+
+	return alpha;
 }
 
 std::vector<int> GetFacesFromVertex(std::vector<int> faces, int idVertex, int faceIgnore = -1)
